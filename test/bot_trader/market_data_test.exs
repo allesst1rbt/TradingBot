@@ -191,4 +191,54 @@ defmodule BotTrader.MarketDataTest do
     assert {:error, :http_error, "PETR4.SA"} =
              YahooFinance.candles("PETR4.SA", 90, "1d", plug: {Req.Test, YahooFinance})
   end
+
+  @quote_body %{
+    "quoteResponse" => %{
+      "result" => [
+        %{
+          "symbol" => "AAPL",
+          "regularMarketPrice" => 200.0,
+          "regularMarketChangePercent" => 2.5,
+          "regularMarketVolume" => 50_000_000
+        },
+        %{
+          "symbol" => "MSFT",
+          "regularMarketPrice" => 400.0,
+          "regularMarketChangePercent" => -1.2,
+          "regularMarketVolume" => 20_000_000
+        }
+      ],
+      "error" => nil
+    }
+  }
+
+  test "chunked quote fetch" do
+    Req.Test.stub(YahooFinance, fn conn ->
+      assert conn.request_path == "/v7/finance/quote"
+      symbols = String.split(conn.query_params["symbols"], ",")
+      assert length(symbols) == 2
+      Req.Test.json(conn, @quote_body)
+    end)
+
+    assert {:ok, quotes} =
+             YahooFinance.quotes(["AAPL", "MSFT"], plug: {Req.Test, YahooFinance})
+
+    assert length(quotes) == 2
+    assert Enum.find(quotes, &(&1.symbol == "AAPL")).day_change_pct == 2.5
+    assert Enum.find(quotes, &(&1.symbol == "MSFT")).volume == 20_000_000
+  end
+
+  test "missing symbols dropped" do
+    Req.Test.stub(YahooFinance, fn conn ->
+      Req.Test.json(conn, @quote_body)
+    end)
+
+    assert {:ok, quotes} =
+             YahooFinance.quotes(["AAPL", "MSFT", "MISSING1", "MISSING2"],
+               plug: {Req.Test, YahooFinance}
+             )
+
+    assert length(quotes) == 2
+    refute Enum.any?(quotes, &(&1.symbol =~ "MISSING"))
+  end
 end

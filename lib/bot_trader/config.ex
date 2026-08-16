@@ -22,6 +22,10 @@ defmodule BotTrader.Config do
   def analysis_interval, do: env("ANALYSIS_INTERVAL", "15m")
   def deep_run_hour_utc, do: env_int("DEEP_RUN_HOUR_UTC", 21)
   def deep_run_minute_utc, do: env_int("DEEP_RUN_MINUTE_UTC", 30)
+  def universe_path, do: env("UNIVERSE_PATH", "config/market_universe.json")
+  def universe_quote_chunk, do: env_int("UNIVERSE_QUOTE_CHUNK", 50)
+  def universe_volume_floor, do: env_int("UNIVERSE_VOLUME_FLOOR", 1_000_000)
+  def universe_scan_enabled, do: env("UNIVERSE_SCAN_ENABLED", "true") == "true"
 
   def yahoo_base_url, do: env("YAHOO_BASE_URL", "https://query1.finance.yahoo.com")
   def coingecko_base_url, do: env("COINGECKO_BASE_URL", "https://api.coingecko.com")

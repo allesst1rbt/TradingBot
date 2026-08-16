@@ -48,6 +48,42 @@ defmodule BotTrader.MarketData.YahooFinance do
     |> Enum.reject(&(&1.close == nil))
   end
 
+  def quotes(symbols, opts \\ []) do
+    url = Config.yahoo_base_url() <> "/v7/finance/quote"
+    chunk = Config.universe_quote_chunk()
+
+    results =
+      symbols
+      |> Enum.chunk_every(chunk)
+      |> Enum.map(fn chunk_symbols ->
+        params = [symbols: Enum.join(chunk_symbols, ",")]
+
+        case Req.get(url, Keyword.merge([params: params], opts)) do
+          {:ok, %Req.Response{status: 200, body: body}} -> parse_quotes(body)
+          _ -> []
+        end
+      end)
+      |> List.flatten()
+
+    {:ok, results}
+  end
+
+  defp parse_quotes(body) do
+    body
+    |> get_in(["quoteResponse", "result"])
+    |> Kernel.||([])
+    |> Enum.map(&to_quote/1)
+  end
+
+  defp to_quote(q) do
+    %{
+      symbol: q["symbol"],
+      price: q["regularMarketPrice"],
+      day_change_pct: q["regularMarketChangePercent"] || 0.0,
+      volume: q["regularMarketVolume"] || 0.0
+    }
+  end
+
   defp range_for(_days, interval) when interval in ["5m", "15m", "30m", "60m", "1h"], do: "1d"
   defp range_for(days, _interval) when days <= 30, do: "1mo"
   defp range_for(days, _interval) when days <= 90, do: "3mo"
