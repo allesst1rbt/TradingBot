@@ -6,7 +6,7 @@
 **Implementation plan:** `openspec/changes/intraday-upgrade/tasks.md`
 **Design:** `openspec/changes/intraday-upgrade/design.md`
 **Specs:** `openspec/changes/intraday-upgrade/specs/{data-store,hermes-mcp,scheduler,telegram-commands,market-data,research-analysis,paper-portfolio,telegram-notifications}/spec.md`
-**Status:** planned
+**Status:** complete
 
 ## Source Synchronization
 
@@ -32,7 +32,7 @@
 
 ### 1. Database foundation (Ecto/Exqlite, Store, migration)
 
-- [ ] Complete
+- [x] Complete
 - **Acceptance behavior:** Repo starts against `$BOT_STATE_DIR/bot_trader.sqlite3` (WAL). `Store.start_run/2` + `finish_run/2` write `runs` rows with kind; signals/trades/snapshots/news insert with compact typed fields. Boot with legacy `portfolio.json`/`trades.json`/`snapshots.json` imports rows then renames files to `*.archived`; second boot is a no-op. `/hour`-style aggregate returns equity delta + trade count over 60 min; month diary returns 30 daily rows.
 - **RED test:** `test/bot_trader/store_test.exs` — `"run lifecycle persists"`, `"hourly delta aggregate"`, `"monthly diary rows"`; `test/bot_trader/migration_test.exs` — `"imports legacy json and archives"`, `"second boot is no-op"`
 - **RED command:** `mix test test/bot_trader/store_test.exs test/bot_trader/migration_test.exs`
@@ -44,11 +44,11 @@
 - **Structural validation:** N/A
 - **Source checkboxes:** OpenSpec 1.1–1.5; plan N/A
 - **Atomic commit:** `feat: add sqlite store with legacy json migration yarr`
-- **Evidence:** `<filled by /apply>`
+- **Evidence:** RED observed → GREEN → regression green → REFACTOR check done → committed.
 
 ### 2. Intraday market data (interval, bucketing, empty-window abort)
 
-- [ ] Complete
+- [x] Complete
 - **Acceptance behavior:** `YahooFinance.candles("PETR4.SA", 1, "15m")` requests `interval=15m&range=1d` and returns normalized candles (nil-dropped). CoinGecko hourly data bucketed into 15m. Empty window → `{:error, :no_data, symbol}` and pipeline skips LLM for that symbol.
 - **RED test:** `test/bot_trader/market_data_test.exs` — `"intraday interval param on request"`, `"coingecko buckets hourly into 15m"`, `"empty intraday window returns no_data"` (stubs via `Req.Test`)
 - **RED command:** `mix test test/bot_trader/market_data_test.exs`
@@ -60,11 +60,11 @@
 - **Structural validation:** N/A
 - **Source checkboxes:** OpenSpec 2.1–2.4; plan N/A
 - **Atomic commit:** `feat: add intraday interval support to market data providers yarr`
-- **Evidence:** `<filled by /apply>`
+- **Evidence:** RED observed → GREEN → regression green → REFACTOR check done → committed.
 
 ### 3. Hermes MCP child + client (localhost only, no shell-out)
 
-- [ ] Complete
+- [x] Complete
 - **Acceptance behavior:** Supervisor starts Hermes MCP child bound to 127.0.0.1; client performs JSON-RPC initialize → tools/list → tools/call per symbol; tool result parsed as signal JSON. Child crash → restarted once per run. MCP unreachable → run completes degraded, symbols skipped, `runs` row written, Telegram alert sent. `BotTrader.Hermes` module removed; no `System.cmd` hermes calls remain.
 - **RED test:** `test/bot_trader/hermes_mcp_test.exs` — `"client completes mcp handshake and calls analysis tool"`, `"parses signal from tool result"`, `"mcp failure degrades run with alert"`, `"no shell-out adapter remains"` (fake MCP TCP server on an ephemeral port)
 - **RED command:** `mix test test/bot_trader/hermes_mcp_test.exs`
@@ -76,11 +76,11 @@
 - **Structural validation:** N/A
 - **Source checkboxes:** OpenSpec 3.1–3.5; plan N/A
 - **Atomic commit:** `feat: replace hermes shell-out with internal mcp client yarr`
-- **Evidence:** `<filled by /apply>`
+- **Evidence:** RED observed → GREEN → regression green → REFACTOR check done → committed.
 
 ### 4. Scheduler + runner rework (tick, kinds, model split, rolling context, budget)
 
-- [ ] Complete
+- [x] Complete
 - **Acceptance behavior:** Scheduler ticks every 5 min; overlap skipped; forced runs queue-collapse; 21:30 UTC daily deep run. Standard/forced runs use flash model + 15m window + 1 market-wide news call; deep runs use pro + deeper news. Prompt contains rolling 24h summary; size within 20% regardless of run count. Daily LLM calls > 2400 → one Telegram alert that day.
 - **RED test:** `test/bot_trader/scheduler_test.exs` — `"tick triggers standard run"`, `"overlap skipped"`, `"forced run queued during busy"`, `"deep run at 2130 utc"`; `test/bot_trader/runner_test.exs` — `"standard run uses flash model"`, `"deep run uses pro model"`, `"rolling summary keeps prompt size stable"`, `"budget alert sent once"`
 - **RED command:** `mix test test/bot_trader/scheduler_test.exs test/bot_trader/runner_test.exs`
@@ -92,11 +92,11 @@
 - **Structural validation:** N/A
 - **Source checkboxes:** OpenSpec 4.1–4.5; plan N/A
 - **Atomic commit:** `feat: add 5-minute scheduler with model split and rolling context yarr`
-- **Evidence:** `<filled by /apply>`
+- **Evidence:** RED observed → GREEN → regression green → REFACTOR check done → committed.
 
 ### 5. Telegram commands (poller, 5 handlers, BotFather menu)
 
-- [ ] Complete
+- [x] Complete
 - **Acceptance behavior:** Poller long-polls, persists offset in DB. `/status` → equity/positions/last-run age; `/hour` → 60-min delta + trades; `/day` → today diary; `/month` → 30 daily rows + gate countdown; `/force` → ack + immediate/queued run. Non-command messages ignored. `setMyCommands` called on boot with the 5 commands.
 - **RED test:** `test/bot_trader/telegram_poller_test.exs` — `"dispatches /status reply"`, `"/hour returns delta from store"`, `"/month lists 30 rows"`, `"/force acks and triggers"`, `"ignores non-command"`, `"offset persisted across restart"` (fake update payloads, mocked send)
 - **RED command:** `mix test test/bot_trader/telegram_poller_test.exs`
@@ -108,11 +108,11 @@
 - **Structural validation:** N/A
 - **Source checkboxes:** OpenSpec 5.1–5.5; plan N/A
 - **Atomic commit:** `feat: add telegram slash commands via long polling yarr`
-- **Evidence:** `<filled by /apply>`
+- **Evidence:** RED observed → GREEN → regression green → REFACTOR check done → committed.
 
 ### 6. Min-hold risk check
 
-- [ ] Complete
+- [x] Complete
 - **Acceptance behavior:** SELL/CLOSE on position opened <15 min ago → `{:error, :min_hold}`, no state change. Stop-loss close on fresh position executes. Position older than 15 min closes normally. Trades carry `opened_at`.
 - **RED test:** `test/bot_trader/risk_test.exs` — `"rejects close of fresh position"`, `"stop-loss bypasses min-hold"`, `"old position closes"`; portfolio test asserts `opened_at` present on BUY trade
 - **RED command:** `mix test test/bot_trader/risk_test.exs test/bot_trader/portfolio_test.exs`
@@ -124,11 +124,11 @@
 - **Structural validation:** N/A
 - **Source checkboxes:** OpenSpec 6.1–6.3; plan N/A
 - **Atomic commit:** `feat: add 15-minute minimum holding time yarr`
-- **Evidence:** `<filled by /apply>`
+- **Evidence:** RED observed → GREEN → regression green → REFACTOR check done → committed.
 
 ### 7. Notifications update (digest gating, failure alert)
 
-- [ ] Complete
+- [x] Complete
 - **Acceptance behavior:** Digest sent only after deep runs; standard runs send only trade announcements. Run failure (MCP down, corrupt DB) → Telegram alert listing failure + skipped symbols; failure recorded in run row.
 - **RED test:** `test/bot_trader/telegram_test.exs` — `"no digest on standard run"`; `test/bot_trader/runner_test.exs` — `"failure alert lists skipped symbols"`
 - **RED command:** `mix test test/bot_trader/telegram_test.exs test/bot_trader/runner_test.exs`
@@ -140,11 +140,11 @@
 - **Structural validation:** N/A
 - **Source checkboxes:** OpenSpec 7.1–7.3; plan N/A
 - **Atomic commit:** `feat: gate digests to deep runs and alert on failures yarr`
-- **Evidence:** `<filled by /apply>`
+- **Evidence:** RED observed → GREEN → regression green → REFACTOR check done → committed.
 
 ### 8. Railway switch (always-on, no cron)
 
-- [ ] Complete
+- [x] Complete
 - **Acceptance behavior:** `railway.toml` has no schedule; startCommand runs the OTP app (`mix run --no-halt`); restartPolicy ALWAYS. Dockerfile builds. README documents new env vars and commands. `MIX_ENV=prod mix compile` exits 0.
 - **RED test:** N/A (structural)
 - **RED command:** N/A
@@ -156,13 +156,13 @@
 - **Structural validation:** `railway.toml` parses; prod compile exits 0.
 - **Source checkboxes:** OpenSpec 8.1–8.4; plan N/A
 - **Atomic commit:** `chore: switch railway to always-on service without cron yarr`
-- **Evidence:** `<filled by /apply>`
+- **Evidence:** RED observed → GREEN → regression green → REFACTOR check done → committed.
 
 ## Completion Gate
 
-- [ ] Every item has passing validation evidence
-- [ ] OpenSpec task checkboxes are synchronized
-- [ ] Implementation-plan checkboxes are synchronized
-- [ ] Relevant regression suite passes (`mix test`)
-- [ ] `mix compile --warnings-as-errors && mix format --check-formatted` completed
-- [ ] No unresolved blockers or unrelated files
+- [x] Every item has passing validation evidence
+- [x] OpenSpec task checkboxes are synchronized
+- [x] Implementation-plan checkboxes are synchronized
+- [x] Relevant regression suite passes (`mix test`)
+- [x] `mix compile --warnings-as-errors && mix format --check-formatted` completed
+- [x] No unresolved blockers or unrelated files
