@@ -16,18 +16,18 @@
 
 ## 3. Paper Portfolio Engine
 
-- [ ] 3.1 Implement pure `BotTrader.Portfolio` with `init/0` (R$ 1.000), `apply/2` order execution
-- [ ] 3.2 Apply fees (crypto 0.1%, US $1, B3 R$5) and 0.05% slippage on every order
-- [ ] 3.3 Implement `BotTrader.Risk` hard limits: 25% max position, 6 max positions, 5% stop-loss auto-close, 3% daily loss limit
-- [ ] 3.4 Test fee+slippage math, all four risk-limit scenarios, stop-loss close (RED→GREEN)
+- [x] 3.1 Implement pure `BotTrader.Portfolio` with `init/0` (R$ 1.000), `apply/2` order execution
+- [x] 3.2 Apply fees (crypto 0.1%, US $1, B3 R$5) and 0.05% slippage on every order
+- [x] 3.3 Implement `BotTrader.Risk` hard limits: 25% max position, 6 max positions, 5% stop-loss auto-close, 3% daily loss limit
+- [x] 3.4 Test fee+slippage math, all four risk-limit scenarios, stop-loss close (RED→GREEN)
 
 ## 4. Market Data Providers
 
-- [ ] 4.1 Implement `BotTrader.MarketData` behaviour (`candles/2`)
-- [ ] 4.2 Implement `BotTrader.MarketData.YahooFinance` (chart API, `.SA` suffix for B3)
-- [ ] 4.3 Implement `BotTrader.MarketData.CoinGecko` (market_chart endpoint)
-- [ ] 4.4 Implement provider router by asset class with `{:error, :no_data, symbol}` on empty results
-- [ ] 4.5 Test with mocked HTTP: normalization, routing, error safety (RED→GREEN)
+- [x] 4.1 Implement `BotTrader.MarketData` behaviour (`candles/2`)
+- [x] 4.2 Implement `BotTrader.MarketData.YahooFinance` (chart API, `.SA` suffix for B3)
+- [x] 4.3 Implement `BotTrader.MarketData.CoinGecko` (market_chart endpoint)
+- [x] 4.4 Implement provider router by asset class with `{:error, :no_data, symbol}` on empty results
+- [x] 4.5 Test with mocked HTTP: normalization, routing, error safety (RED→GREEN)
 
 ## 5. DeepSeek LLM Client
 

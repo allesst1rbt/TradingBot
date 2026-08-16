@@ -67,7 +67,7 @@
 
 ### 3. Paper portfolio engine (fees + slippage + hard risk limits) — FIRST BEHAVIORAL RED
 
-- [ ] Complete
+- [x] Complete
 - **Acceptance behavior:** BUY R$ 100 of BTC at 300000 BRL → cash decreases by exactly `100 + 100*0.001`; quantity = `(100*(1-0.0005))/300000`. US buy 2×AAPL @ $200 → notional + $1 fee converted at configured rate. B3 buy 10×PETR4 @ R$20 → notional + R$5. Orders violating 25%-max-position, 6-max-positions, or 3%-daily-loss are rejected with the exact error atoms and zero state change. Position at −5% from entry auto-closes with a CLOSE record.
 - **RED test:** `test/bot_trader/portfolio_test.exs` — `"crypto buy applies fee and slippage"`, `"us buy applies flat fee"`, `"b3 buy applies flat fee"`; `test/bot_trader/risk_test.exs` — `"rejects over-max position"`, `"rejects 7th position"`, `"stop-loss auto-closes"`, `"daily loss limit blocks buys not closes"`
 - **RED command:** `mix test test/bot_trader/portfolio_test.exs test/bot_trader/risk_test.exs`
@@ -78,12 +78,12 @@
 - **REFACTOR check:** Fee table data-driven (map by asset class, not if-chains); `apply/2` branches only on `:buy | :sell | :close`.
 - **Structural validation:** N/A
 - **Source checkboxes:** OpenSpec 3.1–3.4; plan N/A
-- **Atomic commit:** `feat: add paper portfolio engine with fees, slippage, and risk limits`
-- **Evidence:** `<filled by /apply>`
+- **Atomic commit:** `feat: add paper portfolio engine with fees, slippage, and risk limits yarr`
+- **Evidence:** RED observed (Portfolio/Risk undefined, 12/12 fail); GREEN 12/12; regression 19/19; warnings-as-errors clean; commit created.
 
 ### 4. Market data providers (behaviour, YahooFinance, CoinGecko, router)
 
-- [ ] Complete
+- [x] Complete
 - **Acceptance behavior:** `YahooFinance.candles("PETR4.SA", 90)` returns normalized `[{ts, open, high, low, close, volume}]` for 90 days (mocked HTTP). Router maps `stock-br`→YahooFinance with `.SA`, `crypto`→CoinGecko with coin id. Empty results → `{:error, :no_data, symbol}`.
 - **RED test:** `test/bot_trader/market_data_test.exs` — `"normalizes yahoo candles"`, `"routes b3 ticker to yahoo with SA suffix"`, `"routes crypto to coingecko"`, `"empty result returns error tuple"`
 - **RED command:** `mix test test/bot_trader/market_data_test.exs`
@@ -94,8 +94,8 @@
 - **REFACTOR check:** Normalization (`to_candle/1`) shared via behaviour default or common module; no provider-specific fields leak past the behaviour.
 - **Structural validation:** N/A
 - **Source checkboxes:** OpenSpec 4.1–4.5; plan N/A
-- **Atomic commit:** `feat: add pluggable market data providers with router`
-- **Evidence:** `<filled by /apply>`
+- **Atomic commit:** `feat: add pluggable market data providers with router yarr`
+- **Evidence:** RED observed (modules undefined, 7/7 fail); GREEN 7/7 via Req.Test stubs; regression 26/26; warnings clean; commit created.
 
 ### 5. DeepSeek LLM client (JSON-mode, strict parsing, confidence gate)
 
