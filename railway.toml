@@ -1,0 +1,9 @@
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "mix bot.daily"
+restartPolicyType = "NEVER"
+
+[deploy.schedule]
+cron = "30 21 * * *"
