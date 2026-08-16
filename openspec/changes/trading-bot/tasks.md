@@ -31,47 +31,47 @@
 
 ## 5. DeepSeek LLM Client
 
-- [ ] 5.1 Implement `BotTrader.LLM` chat completion over OpenAI-compatible endpoint (configurable base URL/model, JSON mode)
-- [ ] 5.2 Implement strict signal parsing: `action`, `confidence`, `rationale`, `target_weight`; invalid → `{:error, :invalid_signal}`
-- [ ] 5.3 Implement confidence threshold gate (default 0.6)
-- [ ] 5.4 Test valid signal, invalid JSON, low confidence (RED→GREEN)
+- [x] 5.1 Implement `BotTrader.LLM` chat completion over OpenAI-compatible endpoint (configurable base URL/model, JSON mode)
+- [x] 5.2 Implement strict signal parsing: `action`, `confidence`, `rationale`, `target_weight`; invalid → `{:error, :invalid_signal}`
+- [x] 5.3 Implement confidence threshold gate (default 0.6)
+- [x] 5.4 Test valid signal, invalid JSON, low confidence (RED→GREEN)
 
 ## 6. Research Pipeline
 
-- [ ] 6.1 Implement `BotTrader.Indicators`: RSI(14), EMA(20), EMA(50), daily return
-- [ ] 6.2 Implement `BotTrader.Research` prompt builder (indicators + watchlist context) and qualitative section extraction
-- [ ] 6.3 Implement hybrid universe: seed watchlist + LLM candidates capped per day (default 3)
-- [ ] 6.4 Test indicator math and candidate cap (RED→GREEN)
+- [x] 6.1 Implement `BotTrader.Indicators`: RSI(14), EMA(20), EMA(50), daily return
+- [x] 6.2 Implement `BotTrader.Research` prompt builder (indicators + watchlist context) and qualitative section extraction
+- [x] 6.3 Implement hybrid universe: seed watchlist + LLM candidates capped per day (default 3)
+- [x] 6.4 Test indicator math and candidate cap (RED→GREEN)
 
 ## 7. Telegram Notifications
 
-- [ ] 7.1 Implement `BotTrader.Telegram` send with one retry and failure logging
-- [ ] 7.2 Implement per-transaction announcement formatting (symbol, side, quantity, fill, fee, cash/position summary)
-- [ ] 7.3 Implement daily digest and run-failure alert
-- [ ] 7.4 Test all announcement scenarios with mocked HTTP (RED→GREEN)
+- [x] 7.1 Implement `BotTrader.Telegram` send with one retry and failure logging
+- [x] 7.2 Implement per-transaction announcement formatting (symbol, side, quantity, fill, fee, cash/position summary)
+- [x] 7.3 Implement daily digest and run-failure alert
+- [x] 7.4 Test all announcement scenarios with mocked HTTP (RED→GREEN)
 
 ## 8. Daily Runner
 
-- [ ] 8.1 Implement `mix bot.daily` orchestration: fetch → analyze → orders → state → report → Telegram (run-and-exit)
-- [ ] 8.2 Implement Markdown + JSON report writing under `reports/`
-- [ ] 8.3 Wire per-transaction announcements and digest into the pipeline
-- [ ] 8.4 Test end-to-end run with mocked providers/LLM/Telegram (RED→GREEN)
+- [x] 8.1 Implement `mix bot.daily` orchestration: fetch → analyze → orders → state → report → Telegram (run-and-exit)
+- [x] 8.2 Implement Markdown + JSON report writing under `reports/`
+- [x] 8.3 Wire per-transaction announcements and digest into the pipeline
+- [x] 8.4 Test end-to-end run with mocked providers/LLM/Telegram (RED→GREEN)
 
 ## 9. Evaluation Gate
 
-- [ ] 9.1 Implement `BotTrader.Evaluation` computing return %, max drawdown %, trade count from snapshots/trades
-- [ ] 9.2 Implement verdict: PASS iff return ≥ 2% AND drawdown ≤ 5% AND trades ≥ 10 (env-configurable)
-- [ ] 9.3 Implement day-30 digest verdict + stay-paper-no-broker behavior
-- [ ] 9.4 Test all threshold scenarios (RED→GREEN)
+- [x] 9.1 Implement `BotTrader.Evaluation` computing return %, max drawdown %, trade count from snapshots/trades
+- [x] 9.2 Implement verdict: PASS iff return ≥ 2% AND drawdown ≤ 5% AND trades ≥ 10 (env-configurable)
+- [x] 9.3 Implement day-30 digest verdict + stay-paper-no-broker behavior
+- [x] 9.4 Test all threshold scenarios (RED→GREEN)
 
 ## 10. Backtest
 
-- [ ] 10.1 Implement `mix bot.backtest` replaying ~90 days of fixtures through indicators + portfolio engine
-- [ ] 10.2 Enforce: no LLM calls, "indicator-only" label, never touches live state files
-- [ ] 10.3 Test deterministic metrics and live-state isolation (RED→GREEN)
+- [x] 10.1 Implement `mix bot.backtest` replaying ~90 days of fixtures through indicators + portfolio engine
+- [x] 10.2 Enforce: no LLM calls, "indicator-only" label, never touches live state files
+- [x] 10.3 Test deterministic metrics and live-state isolation (RED→GREEN)
 
 ## 11. Railway Deployment
 
-- [ ] 11.1 Add `railway.toml`: cron schedule `30 21 * * *`, start command `mix bot.daily`, volume mount `/data`
-- [ ] 11.2 Document env vars and deployment steps in README
-- [ ] 11.3 Validate: `mix compile` in prod env (`MIX_ENV=prod mix compile`)
+- [x] 11.1 Add `railway.toml`: cron schedule `30 21 * * *`, start command `mix bot.daily`, volume mount `/data`
+- [x] 11.2 Document env vars and deployment steps in README
+- [x] 11.3 Validate: `mix compile` in prod env (`MIX_ENV=prod mix compile`)

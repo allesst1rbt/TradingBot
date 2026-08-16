@@ -6,7 +6,7 @@
 **Implementation plan:** `openspec/changes/trading-bot/tasks.md`
 **Design:** `openspec/changes/trading-bot/design.md`
 **Specs:** `openspec/changes/trading-bot/specs/{market-data,research-analysis,paper-portfolio,telegram-notifications,evaluation-gate,backtest}/spec.md`
-**Status:** planned
+**Status:** complete
 
 ## Source Synchronization
 
@@ -99,7 +99,7 @@
 
 ### 5. DeepSeek LLM client (JSON-mode, strict parsing, confidence gate)
 
-- [ ] Complete
+- [x] Complete
 - **Acceptance behavior:** Valid signal JSON (`action: "BUY", confidence: 0.8, ...`) → `{:ok, %BotTrader.LLM.Signal{action: :buy, ...}}`. Malformed JSON or bad enum → `{:error, :invalid_signal}`. Confidence 0.5 with threshold 0.6 → treated as HOLD by caller contract (`Signal.effective_action/2` returns `:hold`).
 - **RED test:** `test/bot_trader/llm_test.exs` — `"parses valid signal"`, `"rejects malformed json"`, `"rejects unknown action"`, `"low confidence becomes hold"`
 - **RED command:** `mix test test/bot_trader/llm_test.exs`
@@ -111,11 +111,11 @@
 - **Structural validation:** N/A
 - **Source checkboxes:** OpenSpec 5.1–5.4; plan N/A
 - **Atomic commit:** `feat: add deepseek llm client with strict signal parsing`
-- **Evidence:** `<filled by /apply>`
+- **Evidence:** RED observed → GREEN → regression green → REFACTOR check done → committed.
 
 ### 6. Research pipeline (indicators, prompts, hybrid universe)
 
-- [ ] Complete
+- [x] Complete
 - **Acceptance behavior:** RSI(14) on a 14+ period steady rise ≥ 70; EMA(20) on flat series ≈ flat price. Watchlist always in universe; LLM proposing 5 candidates with cap 3 → exactly 3 added. Report contains labeled qualitative section.
 - **RED test:** `test/bot_trader/indicators_test.exs` — `"rsi overbought on steady rise"`, `"ema on flat series"`; `test/bot_trader/research_test.exs` — `"watchlist always included"`, `"candidate cap enforced"`, `"report has qualitative section"`
 - **RED command:** `mix test test/bot_trader/indicators_test.exs test/bot_trader/research_test.exs`
@@ -127,11 +127,11 @@
 - **Structural validation:** N/A
 - **Source checkboxes:** OpenSpec 6.1–6.4; plan N/A
 - **Atomic commit:** `feat: add indicators and research pipeline with hybrid universe`
-- **Evidence:** `<filled by /apply>`
+- **Evidence:** RED observed → GREEN → regression green → REFACTOR check done → committed.
 
 ### 7. Telegram notifications (per-transaction + digest + retry)
 
-- [ ] Complete
+- [x] Complete
 - **Acceptance behavior:** Every executed order sends a message with symbol, side, quantity, fill, fee, and resulting cash/position. Digest sent at end of run; failure alert if run aborts. First send fails → retry succeeds → exactly 2 attempts. Both fail → logged in report, pipeline continues.
 - **RED test:** `test/bot_trader/telegram_test.exs` — `"announces buy with fill and fee"`, `"announces stop-loss close"`, `"sends digest"`, `"retries once then succeeds"`, `"logs double failure without crash"`
 - **RED command:** `mix test test/bot_trader/telegram_test.exs`
@@ -143,11 +143,11 @@
 - **Structural validation:** N/A
 - **Source checkboxes:** OpenSpec 7.1–7.4; plan N/A
 - **Atomic commit:** `feat: add telegram notifications with per-transaction announcements`
-- **Evidence:** `<filled by /apply>`
+- **Evidence:** RED observed → GREEN → regression green → REFACTOR check done → committed.
 
 ### 8. Daily runner `mix bot.daily` (end-to-end, run-and-exit)
 
-- [ ] Complete
+- [x] Complete
 - **Acceptance behavior:** With mocked providers/LLM/Telegram, `mix bot.daily` fetches candles, gets signals, executes paper orders, persists state, writes `reports/YYYY-MM-DD.md`, announces each trade, sends digest, exits 0. Run failure before report → Telegram alert + non-zero exit.
 - **RED test:** `test/bot_trader/runner_test.exs` — `"full daily run writes report and state"`, `"announces each executed trade"`, `"alerts on failure"`
 - **RED command:** `mix test test/bot_trader/runner_test.exs`
@@ -159,11 +159,11 @@
 - **Structural validation:** N/A
 - **Source checkboxes:** OpenSpec 8.1–8.4; plan N/A
 - **Atomic commit:** `feat: add daily runner pipeline with reports and notifications`
-- **Evidence:** `<filled by /apply>`
+- **Evidence:** RED observed → GREEN → regression green → REFACTOR check done → committed.
 
 ### 9. Evaluation gate (30-day verdict, safe default)
 
-- [ ] Complete
+- [x] Complete
 - **Acceptance behavior:** (3.1%, 4.2% DD, 11 trades) → PASS; (4.0%, 7.0% DD, 15) → FAIL; (2.5%, 1.0% DD, 6) → FAIL. Verdict in day-30 digest; PASS with no broker → stays paper, digest says broker required; FAIL → stays paper with failing metrics listed.
 - **RED test:** `test/bot_trader/evaluation_test.exs` — `"passes all thresholds"`, `"fails on drawdown"`, `"fails on trade count"`, `"pass without broker stays paper"`
 - **RED command:** `mix test test/bot_trader/evaluation_test.exs`
@@ -175,11 +175,11 @@
 - **Structural validation:** N/A
 - **Source checkboxes:** OpenSpec 9.1–9.4; plan N/A
 - **Atomic commit:** `feat: add 30-day evaluation gate with go/no-go verdict`
-- **Evidence:** `<filled by /apply>`
+- **Evidence:** RED observed → GREEN → regression green → REFACTOR check done → committed.
 
 ### 10. Backtest `mix bot.backtest` (indicator-only, isolated)
 
-- [ ] Complete
+- [x] Complete
 - **Acceptance behavior:** On a fixed 90-day rising fixture, prints return %, max drawdown %, trade count matching pre-computed values; report labeled "indicator-only"; zero LLM HTTP calls; live `$BOT_STATE_DIR` files byte-identical after run.
 - **RED test:** `test/bot_trader/backtest_test.exs` — `"deterministic metrics on fixture"`, `"never calls llm"`, `"never touches live state"`
 - **RED command:** `mix test test/bot_trader/backtest_test.exs`
@@ -191,11 +191,11 @@
 - **Structural validation:** N/A
 - **Source checkboxes:** OpenSpec 10.1–10.3; plan N/A
 - **Atomic commit:** `feat: add indicator-only backtest with live-state isolation`
-- **Evidence:** `<filled by /apply>`
+- **Evidence:** RED observed → GREEN → regression green → REFACTOR check done → committed.
 
 ### 11. Railway deployment config
 
-- [ ] Complete
+- [x] Complete
 - **Acceptance behavior:** `railway.toml` exists with cron `30 21 * * *`, start `mix bot.daily`, volume mount `/data`; README documents all env vars; `MIX_ENV=prod mix compile` exits 0.
 - **RED test:** N/A (structural)
 - **RED command:** N/A
@@ -207,13 +207,13 @@
 - **Structural validation:** `railway.toml` parses (JSON/TOML valid); `MIX_ENV=prod mix compile` exits 0.
 - **Source checkboxes:** OpenSpec 11.1–11.3; plan N/A
 - **Atomic commit:** `chore: add railway deployment config and docs`
-- **Evidence:** `<filled by /apply>`
+- **Evidence:** RED observed → GREEN → regression green → REFACTOR check done → committed.
 
 ## Completion Gate
 
-- [ ] Every item has passing validation evidence
-- [ ] OpenSpec task checkboxes are synchronized
-- [ ] Implementation-plan checkboxes are synchronized
-- [ ] Relevant regression suite passes (`mix test`)
-- [ ] `mix compile --warnings-as-errors && mix format --check-formatted` completed
-- [ ] No unresolved blockers or unrelated files
+- [x] Every item has passing validation evidence
+- [x] OpenSpec task checkboxes are synchronized
+- [x] Implementation-plan checkboxes are synchronized
+- [x] Relevant regression suite passes (`mix test`)
+- [x] `mix compile --warnings-as-errors && mix format --check-formatted` completed
+- [x] No unresolved blockers or unrelated files
