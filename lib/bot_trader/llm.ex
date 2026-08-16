@@ -23,7 +23,7 @@ defmodule BotTrader.LLM do
     url = Config.deepseek_base_url() <> "/chat/completions"
 
     body = %{
-      model: Config.deepseek_model(),
+      model: opts[:model] || Config.deepseek_model(),
       messages: messages,
       response_format: %{type: "json_object"}
     }

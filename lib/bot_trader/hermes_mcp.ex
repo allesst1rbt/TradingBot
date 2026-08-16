@@ -10,15 +10,29 @@ defmodule BotTrader.HermesMCP do
   def analyze(messages, opts \\ []) do
     bin = opts[:mcp_bin] || Config.hermes_mcp_bin()
     args = opts[:mcp_args] || Config.hermes_mcp_args()
+    model = opts[:model] || Config.hermes_model()
 
-    with {:ok, client} <- Client.start(bin, args) do
-      result = Client.call_analysis(client, prompt(messages))
+    with {:ok, client} <- Client.start(bin, args),
+         {:ok, text} <-
+           Client.call_tool(client, "analyze", %{
+             "prompt" => prompt(messages),
+             "model" => model
+           }) do
       stop_client(client)
+      {:ok, %{"choices" => [%{"message" => %{"content" => strip_fences(text)}}]}}
+    else
+      _ -> {:error, :mcp_unreachable}
+    end
+  end
 
-      case result do
-        {:ok, text} -> {:ok, %{"choices" => [%{"message" => %{"content" => strip_fences(text)}}]}}
-        _ -> {:error, :mcp_unreachable}
-      end
+  def news(symbols, opts \\ []) do
+    bin = opts[:mcp_bin] || Config.hermes_mcp_bin()
+    args = opts[:mcp_args] || Config.hermes_mcp_args()
+
+    with {:ok, client} <- Client.start(bin, args),
+         {:ok, text} <- Client.call_tool(client, "news_search", %{"symbols" => symbols}) do
+      stop_client(client)
+      {:ok, text}
     else
       _ -> {:error, :mcp_unreachable}
     end

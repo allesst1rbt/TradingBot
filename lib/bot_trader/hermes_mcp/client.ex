@@ -33,6 +33,10 @@ defmodule BotTrader.HermesMCP.Client do
     GenServer.call(pid, {:tools_call, "analyze", %{"prompt" => prompt}}, 120_000)
   end
 
+  def call_tool(pid, name, arguments) do
+    GenServer.call(pid, {:tools_call, name, arguments}, 120_000)
+  end
+
   @impl true
   def init({bin, args}) do
     port =

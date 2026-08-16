@@ -122,6 +122,46 @@ defmodule BotTrader.Store do
     end
   end
 
+  def put_budget_alert(date_iso) do
+    %PollerState{key: "budget_alert", value: date_iso}
+    |> Repo.insert!(on_conflict: :replace_all, conflict_target: [:key])
+
+    :ok
+  end
+
+  def get_budget_alert do
+    case Repo.get(PollerState, "budget_alert") do
+      nil -> {:ok, nil}
+      state -> {:ok, state.value}
+    end
+  end
+
+  def rolling_context(symbol, now) do
+    cutoff = DateTime.add(now, -24 * 3600, :second)
+
+    runs = from(r in Run, where: r.started_at >= ^cutoff, select: count(r.id)) |> Repo.one()
+
+    last_signal =
+      from(s in Signal, where: s.symbol == ^symbol, order_by: [desc: s.id], limit: 1)
+      |> Repo.one()
+
+    news_count =
+      from(n in News,
+        join: r in assoc(n, :run),
+        where: r.started_at >= ^cutoff,
+        select: count(n.id)
+      )
+      |> Repo.one()
+
+    %{
+      runs: runs,
+      last_signal: (last_signal && last_signal.action) || "none",
+      position: nil,
+      equity: 0.0,
+      news_count: news_count
+    }
+  end
+
   defp now, do: DateTime.truncate(DateTime.utc_now(), :second)
 
   defp truncate_ts(attrs) do

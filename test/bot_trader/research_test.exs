@@ -54,4 +54,27 @@ defmodule BotTrader.ResearchTest do
     assert prompt =~ "RSI"
     assert prompt =~ "BUY"
   end
+
+  test "rolling summary size stable regardless of run count" do
+    summary1 =
+      Research.build_rolling_summary(%{
+        runs: 1,
+        last_signal: "HOLD",
+        position: nil,
+        equity: 1000.0,
+        news_count: 1
+      })
+
+    summary2 =
+      Research.build_rolling_summary(%{
+        runs: 10_000,
+        last_signal: "BUY",
+        position: nil,
+        equity: 1000.0,
+        news_count: 50
+      })
+
+    assert byte_size(summary1) > 0
+    assert_in_delta byte_size(summary1), byte_size(summary2), byte_size(summary1) * 0.2
+  end
 end

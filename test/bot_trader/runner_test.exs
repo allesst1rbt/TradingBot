@@ -1,7 +1,12 @@
 defmodule BotTrader.RunnerTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias BotTrader.Runner
+
+  setup_all do
+    TestRepoBoot.start!()
+    :ok
+  end
 
   @candles [
     %{
@@ -53,10 +58,17 @@ defmodule BotTrader.RunnerTest do
       date: ~D[2026-08-16],
       watchlist: @watchlist,
       candles: candles_fun,
-      llm: fn _messages -> {:ok, openai_body(llm_content)} end,
+      llm: fn _messages, model ->
+        send(self(), {:model, model})
+        {:ok, openai_body(llm_content)}
+      end,
       telegram: fn text ->
         send(self(), {:tg, text})
         :ok
+      end,
+      news: fn symbols ->
+        send(self(), {:news, symbols})
+        "market news"
       end
     }
   end
@@ -92,6 +104,45 @@ defmodule BotTrader.RunnerTest do
 
     assert Enum.any?(messages, &(&1 =~ "BUY BTC"))
     assert Enum.any?(messages, &(&1 =~ "Daily digest"))
+  end
+
+  test "standard run uses flash model", %{dir: dir} do
+    assert {:ok, _} = Runner.run(deps(dir, signal_json()), :standard)
+    assert_received {:model, "deepseek-v4-flash"}
+  end
+
+  test "deep run uses pro model", %{dir: dir} do
+    assert {:ok, _} = Runner.run(deps(dir, signal_json()), :deep)
+    assert_received {:model, "deepseek-v4-pro"}
+  end
+
+  test "one market-wide news call per run", %{dir: dir} do
+    assert {:ok, _} = Runner.run(deps(dir, signal_json(action: "HOLD", confidence: 0.1)))
+    assert_received {:news, :market}
+  end
+
+  test "volatility triggers per-symbol news", %{dir: dir} do
+    volatile = [
+      %{
+        ts: ~U[2026-08-16 00:00:00Z],
+        open: 100.0,
+        high: 100.0,
+        low: 100.0,
+        close: 100.0,
+        volume: 1.0
+      },
+      %{
+        ts: ~U[2026-08-16 00:15:00Z],
+        open: 100.0,
+        high: 104.0,
+        low: 100.0,
+        close: 104.0,
+        volume: 1.0
+      }
+    ]
+
+    assert {:ok, _} = Runner.run(deps(dir, signal_json(), fn _s, _d -> {:ok, volatile} end))
+    assert_received {:news, ["BTC"]}
   end
 
   test "hold signal executes no trade", %{dir: dir} do
@@ -149,6 +200,17 @@ defmodule BotTrader.RunnerTest do
     assert {:ok, summary} = Runner.run(deps)
     assert summary.symbols_without_data == ["BTC"]
     assert_received {:candles_called, "PETR4.SA"}
+  end
+
+  test "budget alert sent once per day", %{dir: dir} do
+    {:ok, run} = BotTrader.Store.start_run(:standard)
+    BotTrader.Store.finish_run(run, "ok", 2500)
+
+    assert {:ok, _} = Runner.run(deps(dir, signal_json()))
+    assert Enum.any?(receive_messages(), &(&1 =~ "budget"))
+
+    assert {:ok, _} = Runner.run(deps(dir, signal_json()))
+    refute Enum.any?(receive_messages(), &(&1 =~ "budget"))
   end
 
   defp receive_messages(acc \\ []) do

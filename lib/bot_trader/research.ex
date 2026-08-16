@@ -28,6 +28,7 @@ defmodule BotTrader.Research do
     Daily return: #{format(context.daily_return)}
     Current position: #{position}
     Available cash (BRL): #{format(context.cash_brl)}
+    #{context[:rolling_summary]}
 
     Respond with a single JSON object:
     {"action": "BUY" | "SELL" | "HOLD" | "CLOSE",
@@ -46,6 +47,19 @@ defmodule BotTrader.Research do
     #{qualitative}
 
     _Label: this section is LLM prose and is non-deterministic._
+    """
+    |> String.trim()
+  end
+
+  def build_rolling_summary(attrs) do
+    position =
+      case attrs.position do
+        nil -> "none"
+        %{quantity: qty} -> "#{qty}"
+      end
+
+    """
+    Rolling 24h: #{attrs.runs} runs | last signal: #{attrs.last_signal} | position: #{position} | equity: #{format(attrs.equity)} | news notes: #{attrs.news_count}
     """
     |> String.trim()
   end
