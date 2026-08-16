@@ -2,17 +2,17 @@
 
 ## 1. Project Scaffold
 
-- [ ] 1.1 Create `bot_trader` Mix project (OTP app, `mix new bot_trader --sup`)
-- [ ] 1.2 Add deps: `req` (HTTP), `jason` (JSON); set Elixir ~> 1.17
-- [ ] 1.3 Add `BotTrader.Config` reading env vars (DeepSeek, Telegram, state dir, fees, risk thresholds) with defaults
-- [ ] 1.4 Add `config/watchlist.json` with seed symbols (PETR4, VALE3, ITUB4, AAPL, MSFT, BTC, ETH) and asset-class config
-- [ ] 1.5 Verify: `mix compile` and `mix test` pass on the scaffold
+- [x] 1.1 Create `bot_trader` Mix project (OTP app, `mix new bot_trader --sup`)
+- [x] 1.2 Add deps: `req` (HTTP), `jason` (JSON); set Elixir ~> 1.17
+- [x] 1.3 Add `BotTrader.Config` reading env vars (DeepSeek, Telegram, state dir, fees, risk thresholds) with defaults
+- [x] 1.4 Add `config/watchlist.json` with seed symbols (PETR4, VALE3, ITUB4, AAPL, MSFT, BTC, ETH) and asset-class config
+- [x] 1.5 Verify: `mix compile` and `mix test` pass on the scaffold
 
 ## 2. State Persistence
 
-- [ ] 2.1 Implement `BotTrader.State` with atomic write (temp + rename) for `portfolio.json`, `trades.json`, `snapshots.json` under `$BOT_STATE_DIR`
-- [ ] 2.2 Implement load with corrupt-file abort (never overwrite existing state)
-- [ ] 2.3 Test round-trip persistence and corrupt-file behavior (RED→GREEN)
+- [x] 2.1 Implement `BotTrader.State` with atomic write (temp + rename) for `portfolio.json`, `trades.json`, `snapshots.json` under `$BOT_STATE_DIR`
+- [x] 2.2 Implement load with corrupt-file abort (never overwrite existing state)
+- [x] 2.3 Test round-trip persistence and corrupt-file behavior (RED→GREEN)
 
 ## 3. Paper Portfolio Engine
 

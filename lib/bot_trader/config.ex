@@ -6,6 +6,9 @@ defmodule BotTrader.Config do
 
   def state_dir, do: env("BOT_STATE_DIR", "./data")
 
+  def yahoo_base_url, do: env("YAHOO_BASE_URL", "https://query1.finance.yahoo.com")
+  def coingecko_base_url, do: env("COINGECKO_BASE_URL", "https://api.coingecko.com")
+
   def deepseek_base_url, do: env("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
   def deepseek_model, do: env("DEEPSEEK_MODEL", "deepseek-v4-pro")
 

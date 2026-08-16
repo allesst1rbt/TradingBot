@@ -35,7 +35,7 @@
 
 ### 1. Project scaffold (Mix app, config, watchlist, git init)
 
-- [ ] Complete
+- [x] Complete
 - **Acceptance behavior:** Given an empty dir, when `mix compile` and `mix test` run, then the OTP app compiles with zero warnings and the (empty) suite passes. `config/watchlist.json` exists with PETR4, VALE3, ITUB4, AAPL, MSFT, BTC, ETH and asset classes. `BotTrader.Config` resolves all env vars with defaults.
 - **RED test:** N/A (structural)
 - **RED command:** N/A
@@ -46,12 +46,12 @@
 - **REFACTOR check:** Config is a plain module of functions (no Agent/GenServer); no dead scaffold files.
 - **Structural validation:** `mix compile --warnings-as-errors` exits 0; `mix test` exits 0.
 - **Source checkboxes:** OpenSpec 1.1–1.5; plan N/A
-- **Atomic commit:** `chore: scaffold bot_trader mix project with config and watchlist`
-- **Evidence:** `<filled by /apply>`
+- **Atomic commit:** `chore: scaffold bot_trader mix project with config and watchlist yarr`
+- **Evidence:** Elixir 1.20.3 installed via brew; scaffold compiled with zero warnings; format clean; `mix test` 2/2 green; commit created.
 
 ### 2. State persistence (atomic JSON, restart-safe, corrupt-file abort)
 
-- [ ] Complete
+- [x] Complete
 - **Acceptance behavior:** Given a portfolio saved via `BotTrader.State`, when a fresh process loads from `$BOT_STATE_DIR`, then cash, positions, and realized P&L are identical. Given a corrupt `portfolio.json`, when load runs, then it returns `{:error, :corrupt_state}` and existing files are untouched.
 - **RED test:** `test/bot_trader/state_test.exs` — `"round-trip preserves portfolio"` and `"corrupt file aborts without overwrite"`
 - **RED command:** `mix test test/bot_trader/state_test.exs`
@@ -62,8 +62,8 @@
 - **REFACTOR check:** Single save path for all three files; JSON encode/decode centralized in one place.
 - **Structural validation:** N/A
 - **Source checkboxes:** OpenSpec 2.1–2.3; plan N/A
-- **Atomic commit:** `feat: add restart-safe JSON state persistence`
-- **Evidence:** `<filled by /apply>`
+- **Atomic commit:** `feat: add restart-safe JSON state persistence yarr`
+- **Evidence:** RED observed (UndefinedFunctionError 5/5 fail), GREEN 5/5, full suite 7/7; format clean; commit created.
 
 ### 3. Paper portfolio engine (fees + slippage + hard risk limits) — FIRST BEHAVIORAL RED
 
