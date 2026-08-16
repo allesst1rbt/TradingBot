@@ -127,7 +127,12 @@ defmodule BotTrader.StoreTest do
 
   test "watchlist seed only when empty" do
     assert :ok = Store.seed_watchlist([%{symbol: "AAA", asset_class: "stock-us"}])
-    assert :ok = Store.seed_watchlist([%{symbol: "AAA", asset_class: "stock-us"}, %{symbol: "BBB", asset_class: "stock-br"}])
+
+    assert :ok =
+             Store.seed_watchlist([
+               %{symbol: "AAA", asset_class: "stock-us"},
+               %{symbol: "BBB", asset_class: "stock-br"}
+             ])
 
     watchlist = Store.get_watchlist()
     assert length(watchlist) == 1

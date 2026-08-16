@@ -264,9 +264,6 @@ defmodule BotTrader.RunnerTest do
   end
 
   test "watchlist grows by one per run", %{dir: dir} do
-    System.put_env("UNIVERSE_SCAN_ENABLED", "true")
-    on_exit(fn -> System.delete_env("UNIVERSE_SCAN_ENABLED") end)
-
     BotTrader.Repo.delete_all(BotTrader.WatchlistEntry)
     BotTrader.Store.add_to_watchlist("AAA", "stock-us")
 

@@ -17,11 +17,12 @@ defmodule BotTrader.Application do
       )
     end
 
-    {:ok, _repo} = BotTrader.Repo.start_link()
-    Ecto.Migrator.up(BotTrader.Repo, 0, BotTrader.Release, log: false)
-    Ecto.Migrator.up(BotTrader.Repo, 1, BotTrader.Release.V2, log: false)
-
-    BotTrader.Migration.run(state_dir)
+    if Mix.env() != :test do
+      {:ok, _repo} = BotTrader.Repo.start_link()
+      Ecto.Migrator.up(BotTrader.Repo, 0, BotTrader.Release, log: false)
+      Ecto.Migrator.up(BotTrader.Repo, 1, BotTrader.Release.V2, log: false)
+      BotTrader.Migration.run(state_dir)
+    end
 
     children = [
       {BotTrader.Scheduler, name: BotTrader.Scheduler},

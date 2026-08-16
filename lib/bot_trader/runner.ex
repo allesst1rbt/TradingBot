@@ -68,7 +68,7 @@ defmodule BotTrader.Runner do
         end)
       end
 
-      if Config.universe_scan_enabled() do
+      if deps[:universe_fun] || Config.universe_scan_enabled() do
         universe_fun = deps[:universe_fun] || (&BotTrader.Universe.scan_and_add/0)
         universe_fun.()
       end

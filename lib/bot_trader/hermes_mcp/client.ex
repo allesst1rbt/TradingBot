@@ -101,8 +101,12 @@ defmodule BotTrader.HermesMCP.Client do
 
   @impl true
   def terminate(_reason, state) do
-    if is_port(state.port) do
-      Port.close(state.port)
+    if is_port(state.port) and Port.info(state.port) do
+      try do
+        Port.close(state.port)
+      catch
+        :error, _ -> :ok
+      end
     end
 
     :ok
