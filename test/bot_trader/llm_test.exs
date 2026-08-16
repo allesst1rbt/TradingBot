@@ -81,4 +81,23 @@ defmodule BotTrader.LLMTest do
 
     assert {:error, :http_error} = LLM.chat([%{role: "user", content: "hi"}], req_opts)
   end
+
+  test "chat times out instead of hanging" do
+    {:ok, listen} = :gen_tcp.listen(0, [:binary, active: false, reuseaddr: true])
+    {:ok, port} = :inet.port(listen)
+
+    Task.start(fn ->
+      {:ok, socket} = :gen_tcp.accept(listen)
+      :gen_tcp.recv(socket, 0, 5000)
+    end)
+
+    base = "http://127.0.0.1:#{port}/v1"
+
+    started = System.monotonic_time(:millisecond)
+
+    assert {:error, :http_error} = LLM.chat([%{role: "user", content: "hi"}], base_url: base)
+
+    elapsed = System.monotonic_time(:millisecond) - started
+    assert elapsed < 2000
+  end
 end
