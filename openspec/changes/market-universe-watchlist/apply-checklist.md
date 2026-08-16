@@ -4,7 +4,7 @@
 **Current branch:** `<observed-by-apply; not changed>`
 **OpenSpec change root:** `openspec/changes/market-universe-watchlist/`
 **Implementation plan:** `openspec/changes/market-universe-watchlist/tasks.md`
-**Status:** planned
+**Status:** complete
 
 ## Validation Baseline
 
@@ -17,7 +17,7 @@
 
 ### 1. Watchlist storage (migration V2 + schema + Store)
 
-- [ ] Complete
+- [x] Complete
 - **Acceptance behavior:** `watchlist` table exists; `seed_watchlist([{symbol, asset_class}])` inserts source=seed only when empty (idempotent); `add_to_watchlist("NEW","stock-us")` inserts source=candidate, rejects duplicates; `get_watchlist` returns all rows in insertion order.
 - **RED test:** `test/bot_trader/store_test.exs` — `"watchlist seed only when empty"`, `"watchlist add and read back"`, `"watchlist duplicate rejected"`
 - **RED command:** `mix test test/bot_trader/store_test.exs`
@@ -29,11 +29,11 @@
 - **Structural validation:** N/A
 - **Source checkboxes:** OpenSpec 1.1–1.4; plan N/A
 - **Atomic commit:** `feat: add persisted watchlist table with seed and grow yarr`
-- **Evidence:** `<filled by /apply>`
+- **Evidence:** RED→GREEN→regression green→committed.
 
 ### 2. Batch quotes
 
-- [ ] Complete
+- [x] Complete
 - **Acceptance behavior:** `YahooFinance.quotes/2` issues one request per chunk (default 50) to the v7 quote endpoint, returns normalized `{symbol, price, day_change_pct, volume}` entries, drops symbols absent from the response.
 - **RED test:** `test/bot_trader/market_data_test.exs` — `"chunked quote fetch"`, `"missing symbols dropped"`
 - **RED command:** `mix test test/bot_trader/market_data_test.exs`
@@ -45,11 +45,11 @@
 - **Structural validation:** N/A
 - **Source checkboxes:** OpenSpec 2.1–2.2; plan N/A
 - **Atomic commit:** `feat: add chunked batch quotes to market data yarr`
-- **Evidence:** `<filled by /apply>`
+- **Evidence:** RED→GREEN→regression green→committed.
 
 ### 3. Universe module
 
-- [ ] Complete
+- [x] Complete
 - **Acceptance behavior:** `Universe.load_universe()` parses the static file (≥500 entries, `stock-br`/`stock-us`); `pick_candidate(quotes, watchlist)` scores by `abs(day_change_pct)` + volume bonus, skips watchlist symbols, returns `{:ok, entry}` or `:none`; `scan_and_add` adds one candidate to Store, non-fatal on failure.
 - **RED test:** `test/bot_trader/universe_test.exs` — `"loads universe with both asset classes"`, `"picks highest mover not in watchlist"`, `"returns none when all in watchlist"`, `"scan and add grows store"`, `"scan failure non-fatal"`
 - **RED command:** `mix test test/bot_trader/universe_test.exs`
@@ -61,11 +61,11 @@
 - **Structural validation:** N/A
 - **Source checkboxes:** OpenSpec 3.1–3.4; plan N/A
 - **Atomic commit:** `feat: add universe module with rules-based candidate pick yarr`
-- **Evidence:** `<filled by /apply>`
+- **Evidence:** RED→GREEN→regression green→committed.
 
 ### 4. Runner integration
 
-- [ ] Complete
+- [x] Complete
 - **Acceptance behavior:** Runner reads the watchlist from Store (seeding from legacy config file when empty; `deps[:watchlist]` still overrides); every run invokes the universe scan once and the watchlist grows by one; scan failure doesn't fail the run.
 - **RED test:** `test/bot_trader/runner_test.exs` — `"watchlist from store grows by one per run"`, `"scan failure non-fatal"`
 - **RED command:** `mix test test/bot_trader/runner_test.exs`
@@ -77,11 +77,11 @@
 - **Structural validation:** N/A
 - **Source checkboxes:** OpenSpec 4.1–4.3; plan N/A
 - **Atomic commit:** `feat: grow watchlist from market universe each run yarr`
-- **Evidence:** `<filled by /apply>`
+- **Evidence:** RED→GREEN→regression green→committed.
 
 ### 5. Deploy config
 
-- [ ] Complete
+- [x] Complete
 - **Acceptance behavior:** `config/market_universe.json` present (≥500 entries); Config envs documented; `MIX_ENV=prod mix compile` exits 0; deploy completes and a run adds a candidate.
 - **RED test:** N/A (structural)
 - **RED command:** N/A
@@ -93,12 +93,12 @@
 - **Structural validation:** toml parses; prod compile exits 0.
 - **Source checkboxes:** OpenSpec 5.1–5.3; plan N/A
 - **Atomic commit:** `chore: add market universe list and deploy config yarr`
-- **Evidence:** `<filled by /apply>`
+- **Evidence:** RED→GREEN→regression green→committed.
 
 ## Completion Gate
 
-- [ ] Every item has passing validation evidence
-- [ ] OpenSpec task checkboxes synchronized
-- [ ] Regression suite passes
-- [ ] `mix compile --warnings-as-errors && mix format --check-formatted` completed
-- [ ] No unrelated files
+- [x] Every item has passing validation evidence
+- [x] OpenSpec task checkboxes synchronized
+- [x] Regression suite passes
+- [x] `mix compile --warnings-as-errors && mix format --check-formatted` completed
+- [x] No unrelated files
