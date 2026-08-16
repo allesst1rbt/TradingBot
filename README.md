@@ -40,7 +40,11 @@ mix run --no-halt  # production entrypoint (scheduler + telegram poller)
 | `TELEGRAM_BOT_TOKEN` | — (required) | Telegram bot token |
 | `TELEGRAM_CHAT_ID` | — (required) | Chat id receiving announcements |
 | `BOT_STATE_DIR` | `./data` | State directory (Railway: `/data`) |
-| `WATCHLIST_PATH` | `config/watchlist.json` | Seed watchlist file |
+| `WATCHLIST_PATH` | `config/watchlist.json` | Seed watchlist file (first boot only; watchlist persists in SQLite) |
+| `UNIVERSE_PATH` | `config/market_universe.json` | Full US+BR market universe for scanning |
+| `UNIVERSE_SCAN_ENABLED` | `true` | Adds one candidate to the watchlist each run |
+| `UNIVERSE_QUOTE_CHUNK` | `50` | Symbols per batch quote request |
+| `UNIVERSE_VOLUME_FLOOR` | `1000000` | Volume threshold for the candidate score bonus |
 | `CRYPTO_FEE` | `0.001` | Crypto fee rate (0.1%) |
 | `US_FEE_USD` | `1.0` | US stock flat fee (USD) |
 | `B3_FEE_BRL` | `5.0` | B3 stock flat fee (BRL) |
