@@ -95,6 +95,30 @@ defmodule BotTrader.HermesMCPTest do
              )
   end
 
+  test "mcp handshake timeout returns error tuple without raising" do
+    script =
+      fake_server_script(
+        ~s({"action":"BUY","confidence":0.8,"rationale":"r","target_weight":0.1,"qualitative":"q"})
+      )
+
+    # child never answers but exits when its stdin closes
+    hang_script = script <> ".hang"
+
+    File.write!(hang_script, """
+    case IO.binread(:stdio, :line) do
+      :eof -> :ok
+      _ -> :ok
+    end
+    """)
+
+    assert {:error, :mcp_unreachable} =
+             HermesMCP.analyze([%{role: "user", content: "hi"}],
+               mcp_bin: System.find_executable("elixir"),
+               mcp_args: [hang_script],
+               init_timeout: 200
+             )
+  end
+
   test "no shell-out adapter remains" do
     refute Code.ensure_loaded?(BotTrader.Hermes)
   end

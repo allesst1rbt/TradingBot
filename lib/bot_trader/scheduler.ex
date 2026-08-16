@@ -75,7 +75,13 @@ defmodule BotTrader.Scheduler do
     ref = make_ref()
 
     Task.start(fn ->
-      result = run_fun.(kind)
+      result =
+        try do
+          run_fun.(kind)
+        catch
+          kind, reason -> {:error, {kind, reason}}
+        end
+
       send(self_pid, {:run_done, ref, result})
     end)
 

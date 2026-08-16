@@ -12,12 +12,15 @@ defmodule BotTrader.HermesMCP do
     args = opts[:mcp_args] || Config.hermes_mcp_args()
     model = opts[:model] || Config.hermes_model()
 
-    with {:ok, client} <- Client.start(bin, args),
+    with {:ok, client} <- safe_start(bin, args, opts),
          {:ok, text} <-
-           Client.call_tool(client, "analyze", %{
-             "prompt" => prompt(messages),
-             "model" => model
-           }) do
+           safe_call(
+             client,
+             Client.call_tool(client, "analyze", %{
+               "prompt" => prompt(messages),
+               "model" => model
+             })
+           ) do
       stop_client(client)
       {:ok, %{"choices" => [%{"message" => %{"content" => strip_fences(text)}}]}}
     else
@@ -29,12 +32,29 @@ defmodule BotTrader.HermesMCP do
     bin = opts[:mcp_bin] || Config.hermes_mcp_bin()
     args = opts[:mcp_args] || Config.hermes_mcp_args()
 
-    with {:ok, client} <- Client.start(bin, args),
-         {:ok, text} <- Client.call_tool(client, "news_search", %{"symbols" => symbols}) do
+    with {:ok, client} <- safe_start(bin, args, opts),
+         {:ok, text} <-
+           safe_call(client, Client.call_tool(client, "news_search", %{"symbols" => symbols})) do
       stop_client(client)
       {:ok, text}
     else
       _ -> {:error, :mcp_unreachable}
+    end
+  end
+
+  defp safe_start(bin, args, opts) do
+    try do
+      Client.start(bin, args, opts[:init_timeout] || 30_000)
+    catch
+      :exit, _ -> {:error, :mcp_unreachable}
+    end
+  end
+
+  defp safe_call(_client, call) do
+    try do
+      call
+    catch
+      :exit, _ -> {:error, :mcp_unreachable}
     end
   end
 

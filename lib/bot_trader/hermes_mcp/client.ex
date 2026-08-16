@@ -7,10 +7,10 @@ defmodule BotTrader.HermesMCP.Client do
 
   use GenServer
 
-  def start(bin, args) do
+  def start(bin, args, init_timeout \\ 30_000) do
     case GenServer.start(__MODULE__, {bin, args}) do
       {:ok, pid} ->
-        case GenServer.call(pid, :initialize, 30_000) do
+        case GenServer.call(pid, :initialize, init_timeout) do
           :ok ->
             {:ok, pid}
 
