@@ -129,6 +129,28 @@ defmodule BotTrader.RunnerTest do
     assert Enum.any?(messages, &(&1 =~ "GATE"))
   end
 
+  defmodule FakeProvider do
+    def candles(symbol, _days, _opts \\ []) do
+      send(self(), {:candles_called, symbol})
+      {:ok, []}
+    end
+  end
+
+  test "default candles path calls routed provider with symbol and days" do
+    dir = Path.join(System.tmp_dir!(), "bot_trader_default_#{System.unique_integer([:positive])}")
+    File.mkdir_p!(dir)
+    on_exit(fn -> File.rm_rf(dir) end)
+
+    deps =
+      deps(dir, signal_json())
+      |> Map.drop([:candles])
+      |> Map.put(:router, fn _entry -> {FakeProvider, "PETR4.SA"} end)
+
+    assert {:ok, summary} = Runner.run(deps)
+    assert summary.symbols_without_data == ["BTC"]
+    assert_received {:candles_called, "PETR4.SA"}
+  end
+
   defp receive_messages(acc \\ []) do
     receive do
       {:tg, text} -> receive_messages([text | acc])

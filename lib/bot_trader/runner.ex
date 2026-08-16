@@ -182,8 +182,9 @@ defmodule BotTrader.Runner do
   end
 
   defp analyze(entry, portfolio, deps) do
-    {provider, symbol} = MarketData.router(entry)
-    candles_fun = deps[:candles] || (&provider.candles(&1, 90))
+    router = deps[:router] || (&MarketData.router/1)
+    {provider, symbol} = router.(entry)
+    candles_fun = deps[:candles] || fn symbol, days -> provider.candles(symbol, days) end
     llm_fun = deps[:llm] || default_llm()
 
     with {:ok, candles} <- candles_fun.(symbol, 90),
