@@ -6,7 +6,7 @@ defmodule BotTrader.Store do
 
   import Ecto.Query
 
-  alias BotTrader.{News, PollerState, Repo, Run, Signal, Snapshot, Trade}
+  alias BotTrader.{News, PollerState, Repo, Run, Signal, Snapshot, Trade, WatchlistEntry}
 
   def start_run(kind) do
     run =
@@ -142,6 +142,41 @@ defmodule BotTrader.Store do
       nil -> nil
       run -> DateTime.diff(now, run.started_at, :second) |> div(60)
     end
+  end
+
+  def get_watchlist do
+    from(w in WatchlistEntry, order_by: [asc: w.id])
+    |> Repo.all()
+  end
+
+  def add_to_watchlist(symbol, asset_class, coin_id \\ nil, source \\ "candidate") do
+    now = DateTime.truncate(DateTime.utc_now(), :second)
+
+    changeset =
+      %WatchlistEntry{}
+      |> Ecto.Changeset.change(%{
+        symbol: symbol,
+        asset_class: asset_class,
+        coin_id: coin_id,
+        added_at: now,
+        source: source
+      })
+      |> Ecto.Changeset.unique_constraint(:symbol, name: :watchlist_symbol_index)
+
+    case Repo.insert(changeset) do
+      {:ok, _} -> :ok
+      {:error, _} -> {:error, :duplicate}
+    end
+  end
+
+  def seed_watchlist(entries) do
+    if Repo.aggregate(WatchlistEntry, :count, :id) == 0 do
+      Enum.each(entries, fn entry ->
+        add_to_watchlist(entry.symbol, entry.asset_class, entry[:coin_id], "seed")
+      end)
+    end
+
+    :ok
   end
 
   def get_last_signal(symbol) do

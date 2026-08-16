@@ -15,6 +15,7 @@ defmodule BotTrader.StoreTest do
     Repo.delete_all(BotTrader.Trade)
     Repo.delete_all(BotTrader.Run)
     Repo.delete_all(BotTrader.PollerState)
+    Repo.delete_all(BotTrader.WatchlistEntry)
     :ok
   end
 
@@ -122,6 +123,28 @@ defmodule BotTrader.StoreTest do
     assert {:ok, nil} = Store.get_poller_offset()
     assert :ok = Store.put_poller_offset(42)
     assert {:ok, 42} = Store.get_poller_offset()
+  end
+
+  test "watchlist seed only when empty" do
+    assert :ok = Store.seed_watchlist([%{symbol: "AAA", asset_class: "stock-us"}])
+    assert :ok = Store.seed_watchlist([%{symbol: "AAA", asset_class: "stock-us"}, %{symbol: "BBB", asset_class: "stock-br"}])
+
+    watchlist = Store.get_watchlist()
+    assert length(watchlist) == 1
+    assert hd(watchlist).source == "seed"
+  end
+
+  test "watchlist add and read back" do
+    assert :ok = Store.add_to_watchlist("NEW", "stock-us", nil, "candidate")
+    watchlist = Store.get_watchlist()
+    assert [entry] = watchlist
+    assert entry.symbol == "NEW"
+    assert entry.source == "candidate"
+  end
+
+  test "watchlist duplicate rejected" do
+    assert :ok = Store.add_to_watchlist("NEW", "stock-us")
+    assert {:error, :duplicate} = Store.add_to_watchlist("NEW", "stock-us")
   end
 
   test "last run age computed" do
