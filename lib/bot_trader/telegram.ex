@@ -40,8 +40,11 @@ defmodule BotTrader.Telegram do
   end
 
   def send_failure_alert(reason, opts \\ []) do
-    message = "⚠️ bot_trader run FAILED: #{inspect(reason)}"
-    send_message(message, opts)
+    send_message(format_failure_alert(reason), opts)
+  end
+
+  def format_failure_alert(reason) do
+    "⚠️ bot_trader run FAILED: #{inspect(reason)}"
   end
 
   def format_trade_announcement(trade, summary) do

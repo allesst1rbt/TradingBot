@@ -8,7 +8,7 @@ defmodule BotTrader.LLM do
 
   defmodule Signal do
     @moduledoc false
-    defstruct [:action, :confidence, :rationale, :target_weight]
+    defstruct [:action, :confidence, :rationale, :target_weight, :qualitative]
 
     @doc "BUY/SELL are gated by confidence; HOLD and CLOSE are not."
     def effective_action(%__MODULE__{action: action, confidence: confidence}, threshold)
@@ -48,7 +48,8 @@ defmodule BotTrader.LLM do
          action: action,
          confidence: confidence,
          rationale: map["rationale"],
-         target_weight: weight
+         target_weight: weight,
+         qualitative: map["qualitative"] || ""
        }}
     else
       _ -> {:error, :invalid_signal}
