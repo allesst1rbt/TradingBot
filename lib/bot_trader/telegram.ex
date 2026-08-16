@@ -43,6 +43,39 @@ defmodule BotTrader.Telegram do
     send_message(format_failure_alert(reason), opts)
   end
 
+  def set_my_commands(commands, opts \\ []) do
+    url = "https://api.telegram.org/bot" <> Config.telegram_bot_token() <> "/setMyCommands"
+    body = %{commands: commands}
+
+    case Req.post(url, Keyword.merge([json: body, retry: false], opts)) do
+      {:ok, %Req.Response{status: 200, body: %{"ok" => true}}} -> :ok
+      _ -> {:error, :telegram_failed}
+    end
+  end
+
+  def get_updates(offset, opts \\ []) do
+    url = "https://api.telegram.org/bot" <> Config.telegram_bot_token() <> "/getUpdates"
+    body = %{offset: offset, timeout: 25}
+
+    case Req.post(url, Keyword.merge([json: body, retry: false], opts)) do
+      {:ok, %Req.Response{status: 200, body: %{"ok" => true, "result" => updates}}} ->
+        {:ok, updates}
+
+      _ ->
+        {:error, :telegram_failed}
+    end
+  end
+
+  def send_message_to_chat(chat_id, text, opts \\ []) do
+    url = "https://api.telegram.org/bot" <> Config.telegram_bot_token() <> "/sendMessage"
+    body = %{chat_id: chat_id, text: text}
+
+    case Req.post(url, Keyword.merge([json: body, retry: false], opts)) do
+      {:ok, %Req.Response{status: 200, body: %{"ok" => true}}} -> :ok
+      _ -> {:error, :telegram_failed}
+    end
+  end
+
   def format_failure_alert(reason) do
     "⚠️ bot_trader run FAILED: #{inspect(reason)}"
   end

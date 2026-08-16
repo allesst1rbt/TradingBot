@@ -123,4 +123,15 @@ defmodule BotTrader.StoreTest do
     assert :ok = Store.put_poller_offset(42)
     assert {:ok, 42} = Store.get_poller_offset()
   end
+
+  test "last run age computed" do
+    now = DateTime.utc_now()
+    {:ok, run} = Store.start_run(:standard)
+    Store.finish_run(run, "ok", 1)
+
+    started = run.started_at
+    age = Store.last_run_age_minutes(DateTime.add(started, 10 * 60, :second))
+    assert age != nil
+    assert age <= 10 and age >= 9
+  end
 end

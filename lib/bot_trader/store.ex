@@ -136,6 +136,14 @@ defmodule BotTrader.Store do
     end
   end
 
+  def last_run_age_minutes(now) do
+    case from(r in Run, where: r.status == "ok", order_by: [desc: r.started_at], limit: 1)
+         |> Repo.one() do
+      nil -> nil
+      run -> DateTime.diff(now, run.started_at, :second) |> div(60)
+    end
+  end
+
   def rolling_context(symbol, now) do
     cutoff = DateTime.add(now, -24 * 3600, :second)
 
