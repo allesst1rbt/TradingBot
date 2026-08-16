@@ -144,6 +144,10 @@ defmodule BotTrader.Store do
     end
   end
 
+  def count_runs do
+    Repo.aggregate(Run, :count, :id)
+  end
+
   def get_watchlist do
     from(w in WatchlistEntry, order_by: [asc: w.id])
     |> Repo.all()

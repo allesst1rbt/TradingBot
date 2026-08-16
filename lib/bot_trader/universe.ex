@@ -55,6 +55,11 @@ defmodule BotTrader.Universe do
     end
   end
 
+  def scan_due? do
+    runs = Store.count_runs()
+    runs == 0 or rem(runs, Config.universe_scan_every_n_runs()) == 0
+  end
+
   defp score(quote) do
     abs(quote.day_change_pct) +
       if(quote.volume >= Config.universe_volume_floor(), do: 1.0, else: 0.0)
