@@ -115,6 +115,20 @@ defmodule BotTrader.RunnerTest do
     assert Enum.any?(receive_messages(), &(&1 =~ "FAILED"))
   end
 
+  test "day 30 digest includes gate verdict", %{dir: dir} do
+    snapshots =
+      for i <- 1..29 do
+        %{date: "2026-07-#{i}", equity: 1000.0 + i}
+      end
+
+    BotTrader.State.write(dir, :snapshots, snapshots)
+
+    assert {:ok, _} = Runner.run(deps(dir, signal_json()))
+
+    messages = receive_messages()
+    assert Enum.any?(messages, &(&1 =~ "GATE"))
+  end
+
   defp receive_messages(acc \\ []) do
     receive do
       {:tg, text} -> receive_messages([text | acc])

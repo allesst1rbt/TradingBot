@@ -100,7 +100,9 @@ defmodule BotTrader.Runner do
           )
         end)
 
-        telegram.(
+        days_remaining = max(0, Config.gate_days() - length(snapshots) - 1)
+
+        digest =
           BotTrader.Telegram.format_digest(%{
             pnl_today:
               Enum.reduce(executed_trades, 0.0, fn trade, acc ->
@@ -108,8 +110,22 @@ defmodule BotTrader.Runner do
               end),
             positions: Enum.map(portfolio.positions, & &1.symbol),
             risk_status: "OK",
-            days_remaining: max(0, Config.gate_days() - length(snapshots) - 1)
+            days_remaining: days_remaining
           })
+
+        telegram.(
+          if days_remaining == 0 do
+            metrics =
+              BotTrader.Evaluation.evaluate(
+                snapshots ++ [snapshot],
+                Enum.map(trades, & &1) ++ executed_trades
+              )
+
+            verdict = BotTrader.Evaluation.verdict(metrics)
+            digest <> "\n\n" <> BotTrader.Evaluation.verdict_message(verdict, metrics, false)
+          else
+            digest
+          end
         )
 
         {:ok,
