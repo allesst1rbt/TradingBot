@@ -434,8 +434,11 @@ defmodule BotTrader.Runner do
 
   defp default_llm do
     case Config.llm_backend() do
-      "hermes" -> &BotTrader.HermesMCP.analyze/2
-      _ -> &LLM.chat/2
+      "hermes" ->
+        fn messages, model -> BotTrader.HermesMCP.analyze(messages, model: model) end
+
+      _ ->
+        fn messages, model -> LLM.chat(messages, model: model) end
     end
   end
 

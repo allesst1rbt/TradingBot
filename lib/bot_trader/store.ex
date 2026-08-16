@@ -144,6 +144,14 @@ defmodule BotTrader.Store do
     end
   end
 
+  def get_last_signal(symbol) do
+    case from(s in Signal, where: s.symbol == ^symbol, order_by: [desc: s.id], limit: 1)
+         |> Repo.one() do
+      nil -> {:ok, nil}
+      signal -> {:ok, signal}
+    end
+  end
+
   def rolling_context(symbol, now) do
     cutoff = DateTime.add(now, -24 * 3600, :second)
 

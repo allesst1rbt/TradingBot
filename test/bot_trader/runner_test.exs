@@ -234,6 +234,49 @@ defmodule BotTrader.RunnerTest do
     refute Enum.any?(receive_messages(), &(&1 =~ "budget"))
   end
 
+  defp start_http_responder(body) do
+    {:ok, listen} = :gen_tcp.listen(0, [:binary, active: false, reuseaddr: true])
+    {:ok, port} = :inet.port(listen)
+
+    Task.start(fn ->
+      {:ok, socket} = :gen_tcp.accept(listen)
+      :gen_tcp.recv(socket, 0, 5000)
+
+      :gen_tcp.send(
+        socket,
+        "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: #{byte_size(body)}\r\nconnection: close\r\n\r\n" <>
+          body
+      )
+
+      :gen_tcp.close(socket)
+    end)
+
+    port
+  end
+
+  test "default direct llm backend works end to end", %{dir: dir} do
+    body = Jason.encode!(openai_body(signal_json()))
+
+    port = start_http_responder(body)
+
+    System.put_env("LLM_BACKEND", "direct")
+    System.put_env("DEEPSEEK_BASE_URL", "http://127.0.0.1:#{port}/v1")
+    System.put_env("DEEPSEEK_API_KEY", "test")
+    on_exit(fn -> System.delete_env("LLM_BACKEND") end)
+    on_exit(fn -> System.delete_env("DEEPSEEK_BASE_URL") end)
+    on_exit(fn -> System.delete_env("DEEPSEEK_API_KEY") end)
+
+    deps = deps(dir, signal_json()) |> Map.drop([:llm, :news])
+
+    assert {:ok, summary} = Runner.run(deps, :standard)
+    assert summary.trades_executed >= 0
+
+    {:ok, signal} =
+      BotTrader.Store.get_last_signal("BTC")
+
+    assert signal.model == "deepseek-v4-flash"
+  end
+
   defp receive_messages(acc \\ []) do
     receive do
       {:tg, text} -> receive_messages([text | acc])
