@@ -17,10 +17,10 @@ defmodule BotTrader.Application do
       )
     end
 
-    BotTrader.Migration.run(state_dir)
-
     {:ok, _repo} = BotTrader.Repo.start_link()
     Ecto.Migrator.up(BotTrader.Repo, 0, BotTrader.Release, log: false)
+
+    BotTrader.Migration.run(state_dir)
 
     children = [
       {BotTrader.Scheduler, name: BotTrader.Scheduler},
