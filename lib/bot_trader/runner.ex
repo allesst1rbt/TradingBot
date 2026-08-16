@@ -184,7 +184,7 @@ defmodule BotTrader.Runner do
   defp analyze(entry, portfolio, deps) do
     {provider, symbol} = MarketData.router(entry)
     candles_fun = deps[:candles] || (&provider.candles(&1, 90))
-    llm_fun = deps[:llm] || (&LLM.chat/1)
+    llm_fun = deps[:llm] || default_llm()
 
     with {:ok, candles} <- candles_fun.(symbol, 90),
          false <- candles == [] do
@@ -292,4 +292,11 @@ defmodule BotTrader.Runner do
 
   defp parse_day(nil), do: nil
   defp parse_day(iso), do: Date.from_iso8601!(iso)
+
+  defp default_llm do
+    case Config.llm_backend() do
+      "hermes" -> &BotTrader.Hermes.chat/1
+      _ -> &LLM.chat/1
+    end
+  end
 end

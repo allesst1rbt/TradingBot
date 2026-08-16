@@ -6,6 +6,11 @@ defmodule BotTrader.Config do
 
   def state_dir, do: env("BOT_STATE_DIR", "./data")
 
+  def llm_backend, do: env("LLM_BACKEND", "hermes")
+  def hermes_bin, do: env("HERMES_BIN", "hermes")
+  def hermes_model, do: env("HERMES_MODEL", "deepseek-v4-pro")
+  def hermes_timeout_ms, do: env_int("HERMES_TIMEOUT_MS", 120_000)
+
   def yahoo_base_url, do: env("YAHOO_BASE_URL", "https://query1.finance.yahoo.com")
   def coingecko_base_url, do: env("COINGECKO_BASE_URL", "https://api.coingecko.com")
 
