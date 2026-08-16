@@ -1,5 +1,8 @@
+[service]
+name = "bot-trader"
+
 [build]
-builder = "NIXPACKS"
+builder = "DOCKERFILE"
 
 [deploy]
 startCommand = "mix bot.daily"

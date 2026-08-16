@@ -39,6 +39,7 @@ defmodule BotTrader.MarketData.YahooFinance do
         volume: Enum.at(quote["volume"] || [], i) || 0.0
       }
     end)
+    |> Enum.reject(&(&1.close == nil))
   end
 
   defp range_for(days) when days <= 30, do: "1mo"

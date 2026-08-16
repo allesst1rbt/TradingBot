@@ -4,6 +4,8 @@ defmodule BotTrader.Indicators do
   """
 
   def rsi(closes, period \\ 14) do
+    closes = Enum.reject(closes, &is_nil/1)
+
     diffs = Enum.chunk_every(closes, 2, 1, :discard) |> Enum.map(fn [a, b] -> b - a end)
 
     gains = Enum.map(diffs, &max(&1, 0))
@@ -22,6 +24,7 @@ defmodule BotTrader.Indicators do
   end
 
   def ema(closes, period) do
+    closes = Enum.reject(closes, &is_nil/1)
     k = 2.0 / (period + 1)
     seed = closes |> Enum.take(period) |> average()
 

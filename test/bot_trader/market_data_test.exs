@@ -87,6 +87,40 @@ defmodule BotTrader.MarketDataTest do
              YahooFinance.candles("BOGUS.SA", 90, plug: {Req.Test, YahooFinance})
   end
 
+  test "drops candles with nil close" do
+    body = %{
+      "chart" => %{
+        "result" => [
+          %{
+            "timestamp" => [1_756_848_000, 1_756_934_400, 1_757_020_800],
+            "indicators" => %{
+              "quote" => [
+                %{
+                  "open" => [10.0, nil, 12.0],
+                  "high" => [10.5, nil, 12.5],
+                  "low" => [9.5, nil, 11.5],
+                  "close" => [10.2, nil, 12.2],
+                  "volume" => [1000, nil, 1100]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "error" => nil
+    }
+
+    Req.Test.stub(YahooFinance, fn conn ->
+      Req.Test.json(conn, body)
+    end)
+
+    assert {:ok, candles} =
+             YahooFinance.candles("PETR4.SA", 90, plug: {Req.Test, YahooFinance})
+
+    assert length(candles) == 2
+    assert Enum.all?(candles, &(&1.close != nil))
+  end
+
   test "http failure returns error tuple" do
     Req.Test.stub(YahooFinance, fn conn ->
       Plug.Conn.send_resp(conn, 500, "boom")
