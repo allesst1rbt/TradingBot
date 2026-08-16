@@ -18,7 +18,20 @@ defmodule BotTrader.Runner do
          {:ok, watchlist} <- load_watchlist(deps) do
       portfolio = Portfolio.new_day(portfolio, date)
 
+      telegram = deps[:telegram] || (&BotTrader.Telegram.send_message/1)
+
       signals = analyze_all(watchlist, portfolio, deps, kind)
+
+      failed_symbols =
+        Enum.flat_map(signals, fn s -> if s.llm_error, do: [s.symbol], else: [] end)
+
+      if failed_symbols != [] do
+        telegram.(
+          BotTrader.Telegram.format_failure_alert(
+            "LLM degraded for: " <> Enum.join(failed_symbols, ", ")
+          )
+        )
+      end
 
       news_fun = deps[:news] || default_news()
 
@@ -164,8 +177,6 @@ defmodule BotTrader.Runner do
 
         Store.finish_run(run_row, "ok", calls)
 
-        telegram = deps[:telegram] || (&BotTrader.Telegram.send_message/1)
-
         Enum.each(executed_trades, fn trade ->
           telegram.(
             BotTrader.Telegram.format_trade_announcement(trade, %{
@@ -188,20 +199,22 @@ defmodule BotTrader.Runner do
             days_remaining: days_remaining
           })
 
-        telegram.(
-          if days_remaining == 0 do
-            metrics =
-              BotTrader.Evaluation.evaluate(
-                snapshots ++ [snapshot],
-                Enum.map(trades, & &1) ++ executed_trades
-              )
+        if kind == :deep do
+          telegram.(
+            if days_remaining == 0 do
+              metrics =
+                BotTrader.Evaluation.evaluate(
+                  snapshots ++ [snapshot],
+                  Enum.map(trades, & &1) ++ executed_trades
+                )
 
-            verdict = BotTrader.Evaluation.verdict(metrics)
-            digest <> "\n\n" <> BotTrader.Evaluation.verdict_message(verdict, metrics, false)
-          else
-            digest
-          end
-        )
+              verdict = BotTrader.Evaluation.verdict(metrics)
+              digest <> "\n\n" <> BotTrader.Evaluation.verdict_message(verdict, metrics, false)
+            else
+              digest
+            end
+          )
+        end
 
         check_budget(telegram)
 
@@ -299,14 +312,19 @@ defmodule BotTrader.Runner do
 
       prompt = Research.build_prompt(entry, context)
 
-      signal =
-        with {:ok, body} <- llm_fun.([%{role: "user", content: prompt}], model),
-             content <-
-               body |> get_in(["choices"]) |> List.first() |> get_in(["message", "content"]),
-             {:ok, signal} <- LLM.parse_signal(content) do
-          signal
-        else
-          _ -> nil
+      {signal, llm_error} =
+        case llm_fun.([%{role: "user", content: prompt}], model) do
+          {:ok, body} ->
+            content =
+              body |> get_in(["choices"]) |> List.first() |> get_in(["message", "content"])
+
+            case LLM.parse_signal(content) do
+              {:ok, signal} -> {signal, false}
+              _ -> {nil, false}
+            end
+
+          _ ->
+            {nil, true}
         end
 
       %{
@@ -314,6 +332,7 @@ defmodule BotTrader.Runner do
         asset_class: entry.asset_class,
         last_close: context.last_close,
         signal: signal,
+        llm_error: llm_error,
         effective:
           if(signal,
             do: LLM.Signal.effective_action(signal, Config.confidence_threshold()),
@@ -336,6 +355,7 @@ defmodule BotTrader.Runner do
           asset_class: entry.asset_class,
           last_close: nil,
           signal: nil,
+          llm_error: false,
           effective: :hold,
           target_weight: 0.0,
           qualitative: "",

@@ -96,14 +96,33 @@ defmodule BotTrader.RunnerTest do
     assert [%{symbol: "BTC"}] = portfolio.positions
   end
 
-  test "announces each executed trade and digest", %{dir: dir} do
-    assert {:ok, _} = Runner.run(deps(dir, signal_json()))
+  test "announces each executed trade and digest on deep run", %{dir: dir} do
+    assert {:ok, _} = Runner.run(deps(dir, signal_json()), :deep)
 
     messages =
       receive_messages()
 
     assert Enum.any?(messages, &(&1 =~ "BUY BTC"))
     assert Enum.any?(messages, &(&1 =~ "Daily digest"))
+  end
+
+  test "no digest on standard run", %{dir: dir} do
+    assert {:ok, _} =
+             Runner.run(deps(dir, signal_json(action: "HOLD", confidence: 0.1)), :standard)
+
+    messages = receive_messages()
+    refute Enum.any?(messages, &(&1 =~ "Daily digest"))
+  end
+
+  test "failure alert lists skipped symbols", %{dir: dir} do
+    llm = fn _messages, _model -> {:error, :mcp_unreachable} end
+    deps = deps(dir, signal_json()) |> Map.put(:llm, llm)
+
+    assert {:ok, _} = Runner.run(deps, :standard)
+
+    messages = receive_messages()
+    assert Enum.any?(messages, &(&1 =~ "degraded"))
+    assert Enum.any?(messages, &(&1 =~ "BTC"))
   end
 
   test "standard run uses flash model", %{dir: dir} do
@@ -146,7 +165,9 @@ defmodule BotTrader.RunnerTest do
   end
 
   test "hold signal executes no trade", %{dir: dir} do
-    assert {:ok, summary} = Runner.run(deps(dir, signal_json(action: "HOLD", confidence: 0.1)))
+    assert {:ok, summary} =
+             Runner.run(deps(dir, signal_json(action: "HOLD", confidence: 0.1)), :deep)
+
     assert summary.trades_executed == 0
     assert Enum.any?(receive_messages(), &(&1 =~ "Daily digest"))
   end
@@ -174,7 +195,7 @@ defmodule BotTrader.RunnerTest do
 
     BotTrader.State.write(dir, :snapshots, snapshots)
 
-    assert {:ok, _} = Runner.run(deps(dir, signal_json()))
+    assert {:ok, _} = Runner.run(deps(dir, signal_json()), :deep)
 
     messages = receive_messages()
     assert Enum.any?(messages, &(&1 =~ "GATE"))
