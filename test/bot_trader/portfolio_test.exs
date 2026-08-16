@@ -9,6 +9,8 @@ defmodule BotTrader.PortfolioTest do
 
     assert {:ok, updated, trade} = Portfolio.apply(portfolio, order)
 
+    assert trade.opened_at != nil
+
     expected_fee = 100.0 * 0.001
     assert_in_delta updated.cash, 1000.0 - 100.0 - expected_fee, 1.0e-9
     expected_qty = 100.0 * (1 - 0.0005) / 300_000.0

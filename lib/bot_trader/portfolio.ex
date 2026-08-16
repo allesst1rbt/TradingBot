@@ -17,7 +17,7 @@ defmodule BotTrader.Portfolio do
 
   defmodule Position do
     @moduledoc false
-    defstruct [:symbol, :asset_class, :quantity, :entry_price]
+    defstruct [:symbol, :asset_class, :quantity, :entry_price, :opened_at]
   end
 
   def init do
@@ -38,9 +38,17 @@ defmodule BotTrader.Portfolio do
     filled = qty * (1 - Config.slippage())
     notional = order_notional(order)
     fee = buy_fee(order.asset_class, notional)
+    executed_at = ts(order)
 
     position =
-      update_position(portfolio.positions, order.symbol, order.asset_class, filled, order.price)
+      update_position(
+        portfolio.positions,
+        order.symbol,
+        order.asset_class,
+        filled,
+        order.price,
+        executed_at
+      )
 
     trade = %{
       symbol: order.symbol,
@@ -49,7 +57,8 @@ defmodule BotTrader.Portfolio do
       price: order.price,
       fee: fee,
       reason: order[:reason],
-      ts: ts(order)
+      ts: executed_at,
+      opened_at: executed_at
     }
 
     {:ok,
@@ -106,11 +115,19 @@ defmodule BotTrader.Portfolio do
     end
   end
 
-  defp update_position(positions, symbol, asset_class, qty, price) do
+  defp update_position(positions, symbol, asset_class, qty, price, opened_at) do
     case Enum.find_index(positions, &(&1.symbol == symbol)) do
       nil ->
         positions ++
-          [%Position{symbol: symbol, asset_class: asset_class, quantity: qty, entry_price: price}]
+          [
+            %Position{
+              symbol: symbol,
+              asset_class: asset_class,
+              quantity: qty,
+              entry_price: price,
+              opened_at: opened_at
+            }
+          ]
 
       index ->
         List.update_at(positions, index, &%{&1 | quantity: &1.quantity + qty})

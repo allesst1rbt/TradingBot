@@ -6,9 +6,17 @@ defmodule BotTrader.Risk do
 
   alias BotTrader.Config
 
-  def precheck(_portfolio, %{type: type}) when type in [:sell, :close], do: :ok
+  def precheck(portfolio, order, now \\ nil)
 
-  def precheck(portfolio, %{type: :buy} = order) do
+  def precheck(portfolio, %{type: type} = order, now) when type in [:sell, :close] do
+    cond do
+      order[:reason] == :stop_loss -> :ok
+      min_hold_violated?(portfolio, order, now) -> {:error, :min_hold}
+      true -> :ok
+    end
+  end
+
+  def precheck(portfolio, %{type: :buy} = order, _now) do
     cond do
       daily_loss_limit_breached?(portfolio) ->
         {:error, :daily_loss_limit}
@@ -57,6 +65,18 @@ defmodule BotTrader.Risk do
     projected = (existing_qty + new_qty) * order.price * rate
     limit = Config.max_position_pct() * portfolio.cash
     projected > limit
+  end
+
+  defp min_hold_violated?(_portfolio, _order, nil), do: false
+
+  defp min_hold_violated?(portfolio, order, now) do
+    case Enum.find(portfolio.positions, &(&1.symbol == order.symbol)) do
+      %{opened_at: opened_at} when is_struct(opened_at, DateTime) ->
+        DateTime.diff(now, opened_at, :second) < Config.min_hold_minutes() * 60
+
+      _ ->
+        false
+    end
   end
 
   defp order_quantity(%{quantity: qty}), do: qty

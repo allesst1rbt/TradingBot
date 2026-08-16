@@ -111,4 +111,61 @@ defmodule BotTrader.RiskTest do
     portfolio = %{Portfolio.init() | day_realized_loss: 29.9, start_of_day_cash: 1000.0}
     assert :ok = Risk.precheck(portfolio, buy_order(50.0))
   end
+
+  test "rejects close of fresh position" do
+    portfolio = Portfolio.init()
+    now = ~U[2026-08-16 12:00:00Z]
+
+    buy = %{
+      type: :buy,
+      symbol: "BTC",
+      asset_class: :crypto,
+      notional: 100.0,
+      price: 1000.0,
+      ts: DateTime.add(now, -3 * 60, :second)
+    }
+
+    assert {:ok, portfolio, _} = Portfolio.apply(portfolio, buy)
+
+    close = %{type: :close, symbol: "BTC", asset_class: :crypto, price: 1000.0, reason: :signal}
+    assert {:error, :min_hold} = Risk.precheck(portfolio, close, now)
+  end
+
+  test "stop-loss bypasses min-hold" do
+    portfolio = Portfolio.init()
+    now = ~U[2026-08-16 12:00:00Z]
+
+    buy = %{
+      type: :buy,
+      symbol: "BTC",
+      asset_class: :crypto,
+      notional: 100.0,
+      price: 1000.0,
+      ts: DateTime.add(now, -3 * 60, :second)
+    }
+
+    assert {:ok, portfolio, _} = Portfolio.apply(portfolio, buy)
+
+    stop = %{type: :close, symbol: "BTC", asset_class: :crypto, price: 940.0, reason: :stop_loss}
+    assert :ok = Risk.precheck(portfolio, stop, now)
+  end
+
+  test "old position closes normally" do
+    portfolio = Portfolio.init()
+    now = ~U[2026-08-16 12:00:00Z]
+
+    buy = %{
+      type: :buy,
+      symbol: "BTC",
+      asset_class: :crypto,
+      notional: 100.0,
+      price: 1000.0,
+      ts: DateTime.add(now, -20 * 60, :second)
+    }
+
+    assert {:ok, portfolio, _} = Portfolio.apply(portfolio, buy)
+
+    close = %{type: :close, symbol: "BTC", asset_class: :crypto, price: 1000.0, reason: :signal}
+    assert :ok = Risk.precheck(portfolio, close, now)
+  end
 end
