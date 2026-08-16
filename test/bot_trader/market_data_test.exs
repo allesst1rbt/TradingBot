@@ -32,7 +32,9 @@ defmodule BotTrader.MarketDataTest do
       Req.Test.json(conn, @yahoo_body)
     end)
 
-    assert {:ok, candles} = YahooFinance.candles("PETR4.SA", 90, plug: {Req.Test, YahooFinance})
+    assert {:ok, candles} =
+             YahooFinance.candles("PETR4.SA", 90, "1d", plug: {Req.Test, YahooFinance})
+
     assert length(candles) == 2
 
     assert [first, second] = candles
@@ -69,7 +71,7 @@ defmodule BotTrader.MarketDataTest do
       Req.Test.json(conn, body)
     end)
 
-    assert {:ok, candles} = CoinGecko.candles("bitcoin", 90, plug: {Req.Test, CoinGecko})
+    assert {:ok, candles} = CoinGecko.candles("bitcoin", 90, "1d", plug: {Req.Test, CoinGecko})
     assert length(candles) == 2
     assert [first, second] = candles
     assert first.open == 10.0
@@ -84,7 +86,7 @@ defmodule BotTrader.MarketDataTest do
     end)
 
     assert {:error, :no_data, "BOGUS.SA"} =
-             YahooFinance.candles("BOGUS.SA", 90, plug: {Req.Test, YahooFinance})
+             YahooFinance.candles("BOGUS.SA", 90, "1d", plug: {Req.Test, YahooFinance})
   end
 
   test "drops candles with nil close" do
@@ -115,10 +117,70 @@ defmodule BotTrader.MarketDataTest do
     end)
 
     assert {:ok, candles} =
-             YahooFinance.candles("PETR4.SA", 90, plug: {Req.Test, YahooFinance})
+             YahooFinance.candles("PETR4.SA", 90, "1d", plug: {Req.Test, YahooFinance})
 
     assert length(candles) == 2
     assert Enum.all?(candles, &(&1.close != nil))
+  end
+
+  test "intraday interval param on request" do
+    Req.Test.stub(YahooFinance, fn conn ->
+      assert conn.query_params["interval"] == "15m"
+      assert conn.query_params["range"] == "1d"
+      Req.Test.json(conn, @yahoo_body)
+    end)
+
+    assert {:ok, _} =
+             YahooFinance.candles("PETR4.SA", 1, "15m", plug: {Req.Test, YahooFinance})
+  end
+
+  test "coingecko buckets hourly into 15m" do
+    body = [
+      [1_756_848_000_000, 10.0, 12.0, 9.0, 11.0],
+      [1_756_851_600_000, 11.0, 13.0, 10.0, 12.0]
+    ]
+
+    Req.Test.stub(CoinGecko, fn conn ->
+      Req.Test.json(conn, body)
+    end)
+
+    assert {:ok, candles} =
+             CoinGecko.candles("bitcoin", 1, "15m", plug: {Req.Test, CoinGecko})
+
+    assert length(candles) == 8
+    assert Enum.all?(candles, &(&1.open == 10.0 or &1.open == 11.0))
+    assert Enum.all?(candles, &(&1.close != nil))
+  end
+
+  test "empty intraday window returns no_data" do
+    body = %{
+      "chart" => %{
+        "result" => [
+          %{
+            "timestamp" => [1_756_848_000],
+            "indicators" => %{
+              "quote" => [
+                %{
+                  "open" => [nil],
+                  "high" => [nil],
+                  "low" => [nil],
+                  "close" => [nil],
+                  "volume" => [nil]
+                }
+              ]
+            }
+          }
+        ],
+        "error" => nil
+      }
+    }
+
+    Req.Test.stub(YahooFinance, fn conn ->
+      Req.Test.json(conn, body)
+    end)
+
+    assert {:error, :no_data, "PETR4.SA"} =
+             YahooFinance.candles("PETR4.SA", 1, "15m", plug: {Req.Test, YahooFinance})
   end
 
   test "http failure returns error tuple" do
@@ -127,6 +189,6 @@ defmodule BotTrader.MarketDataTest do
     end)
 
     assert {:error, :http_error, "PETR4.SA"} =
-             YahooFinance.candles("PETR4.SA", 90, plug: {Req.Test, YahooFinance})
+             YahooFinance.candles("PETR4.SA", 90, "1d", plug: {Req.Test, YahooFinance})
   end
 end

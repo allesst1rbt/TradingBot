@@ -6,9 +6,9 @@ defmodule BotTrader.MarketData.YahooFinance do
   alias BotTrader.MarketData.Candle
 
   @impl true
-  def candles(symbol, days, opts \\ []) do
+  def candles(symbol, days, interval \\ "1d", opts \\ []) do
     url = Config.yahoo_base_url() <> "/v8/finance/chart/" <> symbol
-    params = [range: range_for(days), interval: "1d"]
+    params = [range: range_for(days, interval), interval: interval]
 
     case Req.get(url, Keyword.merge([params: params], opts)) do
       {:ok, %Req.Response{status: 200, body: body}} -> parse(body, symbol)
@@ -19,8 +19,14 @@ defmodule BotTrader.MarketData.YahooFinance do
 
   defp parse(body, symbol) do
     case get_in(body, ["chart", "result"]) do
-      nil -> {:error, :no_data, symbol}
-      [result | _] -> {:ok, normalize(result)}
+      nil ->
+        {:error, :no_data, symbol}
+
+      [result | _] ->
+        case normalize(result) do
+          [] -> {:error, :no_data, symbol}
+          candles -> {:ok, candles}
+        end
     end
   end
 
@@ -42,8 +48,9 @@ defmodule BotTrader.MarketData.YahooFinance do
     |> Enum.reject(&(&1.close == nil))
   end
 
-  defp range_for(days) when days <= 30, do: "1mo"
-  defp range_for(days) when days <= 90, do: "3mo"
-  defp range_for(days) when days <= 365, do: "1y"
-  defp range_for(_), do: "5y"
+  defp range_for(_days, interval) when interval in ["5m", "15m", "30m", "60m", "1h"], do: "1d"
+  defp range_for(days, _interval) when days <= 30, do: "1mo"
+  defp range_for(days, _interval) when days <= 90, do: "3mo"
+  defp range_for(days, _interval) when days <= 365, do: "1y"
+  defp range_for(_, _interval), do: "5y"
 end
