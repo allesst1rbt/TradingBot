@@ -68,6 +68,11 @@ defmodule BotTrader.Runner do
         end)
       end
 
+      if Config.universe_scan_enabled() do
+        universe_fun = deps[:universe_fun] || (&BotTrader.Universe.scan_and_add/0)
+        universe_fun.()
+      end
+
       Enum.each(signals, fn signal ->
         if signal.signal do
           Store.insert_signal(run_row, %{
@@ -261,20 +266,41 @@ defmodule BotTrader.Runner do
   defp load_watchlist(%{watchlist: watchlist}) when is_list(watchlist), do: {:ok, watchlist}
 
   defp load_watchlist(_deps) do
+    entries = Store.get_watchlist()
+
+    entries =
+      if entries == [] do
+        seed_watchlist_from_file()
+        Store.get_watchlist()
+      else
+        entries
+      end
+
+    {:ok,
+     Enum.map(entries, fn entry ->
+       %{
+         symbol: entry.symbol,
+         asset_class: asset_class_atom(entry.asset_class),
+         coin_id: entry.coin_id
+       }
+     end)}
+  end
+
+  defp seed_watchlist_from_file do
     with {:ok, body} <- File.read(Config.watchlist_path()),
          {:ok, json} <- Jason.decode(body) do
-      entries = json["symbols"] || []
+      entries =
+        Enum.map(json["symbols"] || [], fn entry ->
+          %{
+            symbol: entry["symbol"],
+            asset_class: entry["asset_class"],
+            coin_id: entry["coin_id"]
+          }
+        end)
 
-      {:ok,
-       Enum.map(entries, fn entry ->
-         %{
-           symbol: entry["symbol"],
-           asset_class: asset_class_atom(entry["asset_class"]),
-           coin_id: entry["coin_id"]
-         }
-       end)}
+      Store.seed_watchlist(entries)
     else
-      _ -> {:error, :watchlist_not_found}
+      _ -> :ok
     end
   end
 

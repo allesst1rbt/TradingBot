@@ -6,6 +6,7 @@ if config_env() == :test do
   System.put_env("BOT_STATE_DIR", Path.join(System.tmp_dir!(), "bot_trader_app_state"))
   System.put_env("OPENCODE_GO_API_KEY", "test")
   System.put_env("DEEPSEEK_API_KEY", "test")
+  System.put_env("UNIVERSE_SCAN_ENABLED", "false")
 
   db_dir = Path.join(System.tmp_dir!(), "bot_trader_test_db")
   File.rm_rf(db_dir)

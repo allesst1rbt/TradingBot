@@ -77,6 +77,15 @@ defmodule BotTrader.RunnerTest do
     dir = Path.join(System.tmp_dir!(), "bot_trader_runner_#{System.unique_integer([:positive])}")
     File.mkdir_p!(dir)
     on_exit(fn -> File.rm_rf(dir) end)
+
+    BotTrader.Repo.delete_all(BotTrader.WatchlistEntry)
+
+    BotTrader.Store.seed_watchlist(
+      Enum.map(@watchlist, fn e ->
+        %{symbol: e.symbol, asset_class: Atom.to_string(e.asset_class), coin_id: e[:coin_id]}
+      end)
+    )
+
     {:ok, dir: dir}
   end
 
@@ -252,6 +261,46 @@ defmodule BotTrader.RunnerTest do
     end)
 
     port
+  end
+
+  test "watchlist grows by one per run", %{dir: dir} do
+    System.put_env("UNIVERSE_SCAN_ENABLED", "true")
+    on_exit(fn -> System.delete_env("UNIVERSE_SCAN_ENABLED") end)
+
+    BotTrader.Repo.delete_all(BotTrader.WatchlistEntry)
+    BotTrader.Store.add_to_watchlist("AAA", "stock-us")
+
+    universe_fun = fn ->
+      BotTrader.Store.add_to_watchlist("NEWCAND", "stock-us")
+      {:ok, "NEWCAND"}
+    end
+
+    deps =
+      deps(dir, signal_json(action: "HOLD", confidence: 0.1))
+      |> Map.put(:universe_fun, universe_fun)
+
+    assert {:ok, _} = Runner.run(deps, :standard)
+
+    symbols = BotTrader.Store.get_watchlist() |> Enum.map(& &1.symbol)
+    assert "NEWCAND" in symbols
+    assert "AAA" in symbols
+  end
+
+  test "scan failure non-fatal keeps watchlist", %{dir: dir} do
+    System.put_env("UNIVERSE_SCAN_ENABLED", "true")
+    on_exit(fn -> System.delete_env("UNIVERSE_SCAN_ENABLED") end)
+
+    BotTrader.Repo.delete_all(BotTrader.WatchlistEntry)
+    BotTrader.Store.add_to_watchlist("AAA", "stock-us")
+
+    deps =
+      deps(dir, signal_json(action: "HOLD", confidence: 0.1))
+      |> Map.put(:universe_fun, fn -> :none end)
+
+    assert {:ok, _} = Runner.run(deps, :standard)
+
+    symbols = BotTrader.Store.get_watchlist() |> Enum.map(& &1.symbol)
+    assert symbols == ["AAA"]
   end
 
   test "default direct llm backend works end to end", %{dir: dir} do
