@@ -33,13 +33,16 @@ defmodule BotTrader.Telegram.Poller do
        fetch_fun: opts[:fetch_fun] || (&Telegram.get_updates/1),
        send_fun: opts[:send_fun] || (&Telegram.send_message_to_chat/2),
        ctx_builder: opts[:ctx_builder] || (&Telegram.Poller.build_ctx/1),
-       poll_ms: opts[:poll_ms] || 25_000
+       poll_ms: opts[:poll_ms] || 25_000,
+       poll_once: opts[:poll_once] || false
      }}
   end
 
   @impl true
   def handle_info(:poll, state) do
-    Process.send_after(self(), :poll, state.poll_ms)
+    unless state.poll_once do
+      Process.send_after(self(), :poll, state.poll_ms)
+    end
 
     case state.fetch_fun.(next_offset()) do
       {:ok, updates} ->
@@ -57,6 +60,8 @@ defmodule BotTrader.Telegram.Poller do
     update_id = update["update_id"]
     message = update["message"]
 
+    Store.put_poller_offset(update_id + 1)
+
     if is_map(message) do
       chat_id = get_in(message, ["chat", "id"])
       text = message["text"]
@@ -70,8 +75,6 @@ defmodule BotTrader.Telegram.Poller do
         end
       end
     end
-
-    Store.put_poller_offset(update_id + 1)
   end
 
   defp next_offset do

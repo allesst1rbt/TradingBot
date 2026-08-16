@@ -47,6 +47,7 @@ defmodule BotTrader.TelegramPollerTest do
         ctx_builder: ctx_builder,
         set_commands_fun: fn _ -> :ok end,
         poll_ms: 10,
+        poll_once: true,
         name: nil
       )
 
@@ -80,6 +81,7 @@ defmodule BotTrader.TelegramPollerTest do
         ctx_builder: fn _ -> nil end,
         set_commands_fun: fn _ -> :ok end,
         poll_ms: 10,
+        poll_once: true,
         name: nil
       )
 
@@ -107,6 +109,7 @@ defmodule BotTrader.TelegramPollerTest do
           :ok
         end,
         poll_ms: 3_600_000,
+        poll_once: true,
         name: nil
       )
 
@@ -142,6 +145,7 @@ defmodule BotTrader.TelegramPollerTest do
         ctx_builder: fn _ -> nil end,
         set_commands_fun: fn _ -> :ok end,
         poll_ms: 10,
+        poll_once: true,
         name: nil
       )
 
