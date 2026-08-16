@@ -1,0 +1,11 @@
+{
+  "symbols": [
+    {"symbol": "PETR4", "asset_class": "stock-br"},
+    {"symbol": "VALE3", "asset_class": "stock-br"},
+    {"symbol": "ITUB4", "asset_class": "stock-br"},
+    {"symbol": "AAPL", "asset_class": "stock-us"},
+    {"symbol": "MSFT", "asset_class": "stock-us"},
+    {"symbol": "BTC", "asset_class": "crypto", "coin_id": "bitcoin"},
+    {"symbol": "ETH", "asset_class": "crypto", "coin_id": "ethereum"}
+  ]
+}
