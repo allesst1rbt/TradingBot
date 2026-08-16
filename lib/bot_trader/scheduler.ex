@@ -24,7 +24,7 @@ defmodule BotTrader.Scheduler do
 
     {:ok,
      %{
-       run_fun: opts[:run_fun] || (&BotTrader.Runner.run(&1)),
+       run_fun: opts[:run_fun] || fn kind -> BotTrader.Runner.run(%{}, kind) end,
        tick_ms: tick_ms,
        timer: ref,
        running: false,

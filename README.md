@@ -1,14 +1,22 @@
 # BotTrader
 
-Autonomous swing trading bot (Elixir/OTP). Daily pipeline: fetches market data for BR stocks, US stocks, and crypto, asks DeepSeek v4 pro for a trading signal per symbol, executes paper trades with fees/slippage and hard risk limits, persists JSON state, and reports to Telegram (per-transaction announcements + daily digest). After 30 days an evaluation gate emits a go/no-go verdict (return ≥ 2%, max drawdown ≤ 5%, ≥ 10 trades). On PASS the bot stays paper until a broker adapter is attached.
+Autonomous intraday trading bot (Elixir/OTP, always-on). Runs every 5 minutes 24/7 on BR stocks, US stocks, and crypto: 15m candles, `deepseek-v4-flash` signals via an internal Hermes MCP link (localhost only), market-wide news each run plus deeper news on volatility triggers, paper trades with fees/slippage and hard risk limits (incl. 15-min min-hold), SQLite history, Telegram announcements and slash commands. Daily 21:30 UTC deep run uses `deepseek-v4-pro` and sends the digest. After 30 days an evaluation gate emits a go/no-go verdict (return ≥ 2%, max drawdown ≤ 5%, ≥ 10 trades); on PASS the bot stays paper until a broker adapter is attached.
 
 ## Commands
 
 ```bash
-mix bot.daily      # one full pipeline run (used by Railway cron)
 mix bot.backtest   # ~90-day indicator-only backtest on the first watchlist symbol
 mix test           # test suite
+mix run --no-halt  # production entrypoint (scheduler + telegram poller)
 ```
+
+## Telegram slash commands
+
+- `/status` — equity, positions, last run age
+- `/hour` — equity change over the last hour
+- `/day` — today's diary
+- `/month` — 30-day diary + gate countdown
+- `/force` — run the pipeline now (queued if a run is executing)
 
 ## Environment Variables
 
@@ -16,7 +24,19 @@ mix test           # test suite
 |---|---|---|
 | `DEEPSEEK_API_KEY` | — (required) | API key for the OpenAI-compatible endpoint |
 | `DEEPSEEK_BASE_URL` | `https://api.deepseek.com/v1` | Base URL (may point to the opencode-go endpoint) |
-| `DEEPSEEK_MODEL` | `deepseek-v4-pro` | Model name |
+| `DEEPSEEK_MODEL` | `deepseek-v4-pro` | Model name (direct backend) |
+| `LLM_BACKEND` | `hermes` | `hermes` (MCP) or `direct` (HTTP) |
+| `HERMES_MCP_BIN` | `hermes` | Hermes binary for the MCP child |
+| `HERMES_MCP_ARGS` | `mcp` | Comma-separated args for the MCP child |
+| `LLM_MODEL_FLASH` | `deepseek-v4-flash` | Model for standard/forced runs |
+| `LLM_MODEL_PRO` | `deepseek-v4-pro` | Model for the daily deep run |
+| `RUN_INTERVAL_MS` | `300000` | Scheduler tick interval |
+| `ANALYSIS_INTERVAL` | `15m` | Candle interval |
+| `VOLATILITY_THRESHOLD` | `0.02` | 15m move triggering per-symbol news |
+| `DAILY_CALL_BUDGET` | `2400` | LLM calls/day before a Telegram alert |
+| `MIN_HOLD_MINUTES` | `15` | Minimum holding time per position |
+| `DEEP_RUN_HOUR_UTC` | `21` | Deep run hour (UTC) |
+| `DEEP_RUN_MINUTE_UTC` | `30` | Deep run minute (UTC) |
 | `TELEGRAM_BOT_TOKEN` | — (required) | Telegram bot token |
 | `TELEGRAM_CHAT_ID` | — (required) | Chat id receiving announcements |
 | `BOT_STATE_DIR` | `./data` | State directory (Railway: `/data`) |
@@ -42,8 +62,8 @@ mix test           # test suite
 
 ## Railway Deployment
 
-1. Create a Railway project and deploy this repo (Nixpacks auto-detects Elixir; `railway.toml` sets `mix bot.daily` with cron `30 21 * * *` UTC = 18:30 BRT, after B3 and US closes).
+1. Create a Railway project and deploy this repo (Dockerfile builds Elixir + Hermes; `railway.toml` runs `mix run --no-halt` with restartPolicy ALWAYS).
 2. Attach a volume at `/data` (service → Settings → Volumes, or `railway volume add -m /data`).
-3. Set the env vars above as service variables (`DEEPSEEK_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` at minimum; `BOT_STATE_DIR=/data`).
+3. Set the env vars above as service variables (`OPENCODE_GO_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` at minimum; `BOT_STATE_DIR=/data`). The entrypoint seeds `~/.hermes/.env` from `OPENCODE_GO_API_KEY`.
 4. Verify with `MIX_ENV=prod mix compile` locally.
-5. The cron task must exit when done — `mix bot.daily` returns after the run.
+5. Rollback: archived JSON (`*.json.archived`) remains in `/data`; redeploy the previous image.

@@ -5,8 +5,5 @@ name = "bot-trader"
 builder = "DOCKERFILE"
 
 [deploy]
-startCommand = "mix bot.daily"
-restartPolicyType = "NEVER"
-
-[deploy.schedule]
-cron = "30 21 * * *"
+startCommand = "mix run --no-halt"
+restartPolicyType = "ALWAYS"
