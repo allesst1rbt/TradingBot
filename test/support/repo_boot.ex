@@ -9,7 +9,7 @@ defmodule TestRepoBoot do
 
         Application.put_env(:bot_trader, BotTrader.Repo,
           database: Path.join(@db_dir, "test.db"),
-          pool_size: 2,
+          pool_size: 1,
           journal_mode: :wal,
           busy_timeout: 5000
         )
