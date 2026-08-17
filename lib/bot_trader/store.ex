@@ -191,7 +191,7 @@ defmodule BotTrader.Store do
     :ok
   end
 
-  def open_positions(now \\ DateTime.utc_now()) do
+  def open_positions do
     rows =
       from(t in Trade,
         select: {t.symbol, t.side, t.quantity, t.price, t.realized_pnl},

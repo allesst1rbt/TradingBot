@@ -52,7 +52,8 @@ defmodule BotTrader.Scheduler do
         {:noreply, state}
 
       deep_due?(state) ->
-        {:noreply, %{start_run(state, :deep) | last_deep_date: Date.utc_today()}}
+        {:noreply,
+         %{start_run(state, :deep) | last_deep_date: state.now.() |> DateTime.to_date()}}
 
       true ->
         {:noreply, start_run(state, :standard)}

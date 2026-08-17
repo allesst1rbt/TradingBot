@@ -153,7 +153,7 @@ defmodule BotTrader.StoreTest do
   end
 
   test "open positions derived from trades" do
-    now = DateTime.utc_now()
+    _now = DateTime.utc_now()
 
     Store.insert_trade(%{
       symbol: "BTC",
@@ -161,8 +161,8 @@ defmodule BotTrader.StoreTest do
       quantity: 0.1,
       price: 100.0,
       fee: 0.1,
-      ts: now,
-      opened_at: now
+      ts: _now,
+      opened_at: _now
     })
 
     Store.insert_trade(%{
@@ -172,7 +172,7 @@ defmodule BotTrader.StoreTest do
       price: 110.0,
       fee: 0.1,
       realized_pnl: 0.4,
-      ts: now
+      ts: _now
     })
 
     {:ok, run} = Store.start_run(:standard)
@@ -185,7 +185,7 @@ defmodule BotTrader.StoreTest do
       price: 120.0
     })
 
-    positions = Store.open_positions(now)
+    positions = Store.open_positions()
     assert [btc] = positions
     assert btc.symbol == "BTC"
     assert_in_delta btc.quantity, 0.06, 1.0e-9
@@ -216,7 +216,7 @@ defmodule BotTrader.StoreTest do
       ts: now
     })
 
-    assert Store.open_positions(now) == []
+    assert Store.open_positions() == []
   end
 
   test "pagination math" do
