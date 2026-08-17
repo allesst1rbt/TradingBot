@@ -63,6 +63,75 @@ defmodule BotTrader.TelegramCommandsTest do
     assert text =~ "queued"
   end
 
+  test "positions page one with open section" do
+    trades =
+      for i <- 25..1//-1,
+          do: %{
+            symbol: "S#{i}",
+            side: "BUY",
+            quantity: 1.0,
+            price: i * 1.0,
+            fee: 0.0,
+            ts: ~U[2026-08-16 12:00:00Z]
+          }
+
+    positions_ctx =
+      Map.put(ctx(), :positions, fn page ->
+        {[%{symbol: "BTC", quantity: 0.06, entry: 100.0, unrealized: 1.2}], Enum.take(trades, 20),
+         2, page}
+      end)
+
+    assert {:reply, text} = Commands.dispatch("/positions", positions_ctx)
+    assert text =~ "Open now"
+    assert text =~ "BTC"
+    assert text =~ "page 1/2"
+    assert text =~ "S25"
+    refute text =~ "S5"
+  end
+
+  test "positions page two" do
+    trades =
+      for i <- 25..1//-1,
+          do: %{
+            symbol: "S#{i}",
+            side: "BUY",
+            quantity: 1.0,
+            price: i * 1.0,
+            fee: 0.0,
+            ts: ~U[2026-08-16 12:00:00Z]
+          }
+
+    positions_ctx =
+      Map.put(ctx(), :positions, fn page ->
+        {[], Enum.drop(trades, 20), 2, page}
+      end)
+
+    assert {:reply, text} = Commands.dispatch("/positions 2", positions_ctx)
+    assert text =~ "page 2/2"
+    assert text =~ "S5"
+    refute text =~ "S25"
+  end
+
+  test "positions out of range" do
+    positions_ctx =
+      Map.put(ctx(), :positions, fn _page ->
+        {[], [], 2, 9}
+      end)
+
+    assert {:reply, text} = Commands.dispatch("/positions 9", positions_ctx)
+    assert text =~ "no such page"
+  end
+
+  test "positions no open" do
+    positions_ctx =
+      Map.put(ctx(), :positions, fn _page ->
+        {[], [], 1, 1}
+      end)
+
+    assert {:reply, text} = Commands.dispatch("/positions", positions_ctx)
+    assert text =~ "No open positions"
+  end
+
   test "ignores non-command" do
     assert {:no_reply, _} = Commands.dispatch("hello there", ctx())
   end

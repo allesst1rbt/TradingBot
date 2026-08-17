@@ -46,6 +46,41 @@ defmodule BotTrader.Telegram.Commands do
     end
   end
 
+  def dispatch("/positions" <> rest, ctx) do
+    page =
+      case rest |> String.trim() do
+        "" -> 1
+        number -> String.to_integer(number)
+      end
+
+    {open, trades, total_pages, resolved_page} = ctx.positions.(page)
+
+    if resolved_page > total_pages do
+      {:reply, "no such page"}
+    else
+      open_section =
+        case open do
+          [] ->
+            "No open positions"
+
+          positions ->
+            "Open now:\n" <>
+              Enum.map_join(positions, "\n", fn p ->
+                "  #{p.symbol} qty=#{p.quantity} entry=#{fmt(p.entry)} unrealized=#{fmt(p.unrealized)}"
+              end)
+        end
+
+      history =
+        Enum.map_join(trades, "\n", fn t ->
+          pnl = if t[:realized_pnl], do: " pnl=#{fmt(t[:realized_pnl])}", else: ""
+
+          "  #{t.symbol} #{t.side} qty=#{t.quantity} price=#{fmt(t.price)} fee=#{fmt(t.fee)}#{pnl}"
+        end)
+
+      {:reply, "#{open_section}\n\nHistory (page #{resolved_page}/#{total_pages}):\n#{history}"}
+    end
+  end
+
   def dispatch(_text, _ctx), do: {:no_reply, nil}
 
   defp fmt(value) when is_float(value), do: :erlang.float_to_binary(value, decimals: 2)

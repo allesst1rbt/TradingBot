@@ -14,7 +14,8 @@ defmodule BotTrader.Telegram.Poller do
     %{command: "hour", description: "Equity change over the last hour"},
     %{command: "day", description: "Today's diary"},
     %{command: "month", description: "30-day diary and gate countdown"},
-    %{command: "force", description: "Run the analysis pipeline now"}
+    %{command: "force", description: "Run the analysis pipeline now"},
+    %{command: "positions", description: "Open positions and trade history"}
   ]
 
   def start_link(opts) do
@@ -96,7 +97,11 @@ defmodule BotTrader.Telegram.Poller do
       hour: Store.hourly_delta(now),
       day: Store.day_diary(DateTime.to_date(now)),
       month: Store.month_diary(30, now),
-      force: fn -> BotTrader.Scheduler.force(BotTrader.Scheduler) end
+      force: fn -> BotTrader.Scheduler.force(BotTrader.Scheduler) end,
+      positions: fn page ->
+        {open, trades, total_pages} = BotTrader.Store.positions_page(page, 20)
+        {open, trades, total_pages, page}
+      end
     }
   end
 

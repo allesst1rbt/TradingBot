@@ -233,6 +233,11 @@ defmodule BotTrader.Store do
     |> Enum.filter(&(&1.quantity > 1.0e-9))
   end
 
+  def positions_page(page, page_size \\ 20) do
+    {trades, total_pages} = list_trades_paginated(page, page_size)
+    {open_positions(), trades, total_pages}
+  end
+
   def list_trades_paginated(page, page_size \\ 20) do
     page = max(page, 1)
     total = Repo.aggregate(Trade, :count, :id)
