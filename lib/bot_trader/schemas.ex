@@ -7,6 +7,7 @@ defmodule BotTrader.Run do
     field(:finished_at, :utc_datetime)
     field(:status, :string)
     field(:calls, :integer, default: 0)
+    field(:note, :string)
   end
 end
 

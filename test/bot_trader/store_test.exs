@@ -152,6 +152,102 @@ defmodule BotTrader.StoreTest do
     assert {:error, :duplicate} = Store.add_to_watchlist("NEW", "stock-us")
   end
 
+  test "open positions derived from trades" do
+    now = DateTime.utc_now()
+
+    Store.insert_trade(%{
+      symbol: "BTC",
+      side: "BUY",
+      quantity: 0.1,
+      price: 100.0,
+      fee: 0.1,
+      ts: now,
+      opened_at: now
+    })
+
+    Store.insert_trade(%{
+      symbol: "BTC",
+      side: "CLOSE",
+      quantity: 0.04,
+      price: 110.0,
+      fee: 0.1,
+      realized_pnl: 0.4,
+      ts: now
+    })
+
+    {:ok, run} = Store.start_run(:standard)
+
+    Store.insert_signal(run, %{
+      symbol: "BTC",
+      action: "HOLD",
+      confidence: 0.5,
+      model: "flash",
+      price: 120.0
+    })
+
+    positions = Store.open_positions(now)
+    assert [btc] = positions
+    assert btc.symbol == "BTC"
+    assert_in_delta btc.quantity, 0.06, 1.0e-9
+    assert_in_delta btc.entry, 100.0, 1.0e-9
+    assert_in_delta btc.unrealized, 0.06 * (120.0 - 100.0), 1.0e-6
+  end
+
+  test "fully closed excluded" do
+    now = DateTime.utc_now()
+
+    Store.insert_trade(%{
+      symbol: "AAPL",
+      side: "BUY",
+      quantity: 2.0,
+      price: 100.0,
+      fee: 0.0,
+      ts: now,
+      opened_at: now
+    })
+
+    Store.insert_trade(%{
+      symbol: "AAPL",
+      side: "CLOSE",
+      quantity: 2.0,
+      price: 105.0,
+      fee: 0.0,
+      realized_pnl: 10.0,
+      ts: now
+    })
+
+    assert Store.open_positions(now) == []
+  end
+
+  test "pagination math" do
+    now = DateTime.utc_now()
+
+    for i <- 1..45 do
+      Store.insert_trade(%{
+        symbol: "S#{i}",
+        side: "BUY",
+        quantity: 1.0,
+        price: i * 1.0,
+        fee: 0.0,
+        ts: now,
+        opened_at: now
+      })
+    end
+
+    {trades, total} = Store.list_trades_paginated(3, 20)
+    assert total == 3
+    assert length(trades) == 5
+    assert List.last(trades).symbol == "S1"
+    assert List.first(trades).symbol == "S5"
+  end
+
+  test "run note recorded" do
+    {:ok, run} = Store.start_run(:standard)
+    assert :ok = Store.note_run(run, "memory write failed")
+    refreshed = BotTrader.Repo.get!(BotTrader.Run, run.id)
+    assert refreshed.note == "memory write failed"
+  end
+
   test "last run age computed" do
     now = DateTime.utc_now()
     {:ok, run} = Store.start_run(:standard)

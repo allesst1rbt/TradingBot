@@ -21,6 +21,7 @@ defmodule BotTrader.Application do
       {:ok, _repo} = BotTrader.Repo.start_link()
       Ecto.Migrator.up(BotTrader.Repo, 0, BotTrader.Release, log: false)
       Ecto.Migrator.up(BotTrader.Repo, 1, BotTrader.Release.V2, log: false)
+      Ecto.Migrator.up(BotTrader.Repo, 2, BotTrader.Release.V3, log: false)
       BotTrader.Migration.run(state_dir)
     end
 

@@ -183,6 +183,72 @@ defmodule BotTrader.Store do
     :ok
   end
 
+  def note_run(run, note) do
+    run
+    |> Ecto.Changeset.change(note: note)
+    |> Repo.update!()
+
+    :ok
+  end
+
+  def open_positions(now \\ DateTime.utc_now()) do
+    rows =
+      from(t in Trade,
+        select: {t.symbol, t.side, t.quantity, t.price, t.realized_pnl},
+        order_by: [asc: t.id]
+      )
+      |> Repo.all()
+
+    rows
+    |> Enum.group_by(&elem(&1, 0))
+    |> Enum.map(fn {symbol, trades} ->
+      buy_qty =
+        trades |> Enum.filter(&(elem(&1, 1) == "BUY")) |> Enum.map(&elem(&1, 2)) |> Enum.sum()
+
+      close_qty =
+        trades
+        |> Enum.filter(&(elem(&1, 1) in ["SELL", "CLOSE"]))
+        |> Enum.map(&elem(&1, 2))
+        |> Enum.sum()
+
+      qty = buy_qty - close_qty
+
+      buys = Enum.filter(trades, &(elem(&1, 1) == "BUY"))
+
+      entry =
+        if buys == [],
+          do: 0.0,
+          else:
+            Enum.sum(Enum.map(buys, fn t -> elem(t, 2) * elem(t, 3) end)) /
+              Enum.sum(Enum.map(buys, &elem(&1, 2)))
+
+      case get_last_signal(symbol) do
+        {:ok, %{price: price}} when is_number(price) ->
+          %{symbol: symbol, quantity: qty, entry: entry, unrealized: qty * (price - entry)}
+
+        _ ->
+          %{symbol: symbol, quantity: qty, entry: entry, unrealized: 0.0}
+      end
+    end)
+    |> Enum.filter(&(&1.quantity > 1.0e-9))
+  end
+
+  def list_trades_paginated(page, page_size \\ 20) do
+    page = max(page, 1)
+    total = Repo.aggregate(Trade, :count, :id)
+    total_pages = max(div(total + page_size - 1, page_size), 1)
+
+    trades =
+      from(t in Trade,
+        order_by: [desc: t.id],
+        offset: ^((page - 1) * page_size),
+        limit: ^page_size
+      )
+      |> Repo.all()
+
+    {trades, total_pages}
+  end
+
   def get_last_signal(symbol) do
     case from(s in Signal, where: s.symbol == ^symbol, order_by: [desc: s.id], limit: 1)
          |> Repo.one() do
