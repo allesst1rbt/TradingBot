@@ -22,11 +22,11 @@ defmodule BotTrader.RiskTest do
     assert :ok = Risk.precheck(portfolio, order)
   end
 
-  test "rejects 7th position" do
+  test "rejects 11th position" do
     portfolio = Portfolio.init()
 
     filled =
-      Enum.reduce(1..6, portfolio, fn i, acc ->
+      Enum.reduce(1..10, portfolio, fn i, acc ->
         order = %{
           type: :buy,
           symbol: "SYM#{i}",
@@ -39,7 +39,7 @@ defmodule BotTrader.RiskTest do
         acc
       end)
 
-    order = %{type: :buy, symbol: "SYM7", asset_class: :crypto, notional: 50.0, price: 100.0}
+    order = %{type: :buy, symbol: "SYM11", asset_class: :crypto, notional: 50.0, price: 100.0}
     assert {:error, :max_positions} = Risk.precheck(filled, order)
   end
 
