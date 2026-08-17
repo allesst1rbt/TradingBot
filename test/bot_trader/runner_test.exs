@@ -71,7 +71,8 @@ defmodule BotTrader.RunnerTest do
       news: fn symbols ->
         send(self(), {:news, symbols})
         "market news"
-      end
+      end,
+      mover_fun: fn -> [] end
     }
   end
 

@@ -26,7 +26,7 @@ defmodule BotTrader.Config do
   def universe_quote_chunk, do: env_int("UNIVERSE_QUOTE_CHUNK", 50)
   def universe_volume_floor, do: env_int("UNIVERSE_VOLUME_FLOOR", 1_000_000)
   def universe_scan_enabled, do: env("UNIVERSE_SCAN_ENABLED", "true") == "true"
-  def mover_count, do: env_int("MOVER_COUNT", 5)
+  def mover_count, do: env_int("MOVER_COUNT", 10)
   def max_mover_position_pct, do: env_float("MAX_MOVER_POSITION_PCT", 0.10)
   def market_hours_enabled, do: env("MARKET_HOURS_ENABLED", "true") == "true"
   def candle_cache_seconds, do: env_int("CANDLE_CACHE_SECONDS", 900)
