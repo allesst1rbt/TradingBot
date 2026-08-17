@@ -263,7 +263,7 @@ defmodule BotTrader.RunnerTest do
 
   test "budget alert sent once per day", %{dir: dir} do
     {:ok, run} = BotTrader.Store.start_run(:standard)
-    BotTrader.Store.finish_run(run, "ok", 2500)
+    BotTrader.Store.finish_run(run, "ok", 5500)
 
     assert {:ok, _} = Runner.run(deps(dir, signal_json()))
     assert Enum.any?(receive_messages(), &(&1 =~ "budget"))
