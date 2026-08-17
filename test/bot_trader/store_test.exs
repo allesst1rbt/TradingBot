@@ -292,6 +292,23 @@ defmodule BotTrader.StoreTest do
     assert_in_delta summary.realized, 2.0, 1.0e-6
   end
 
+  test "period summary includes latest equity" do
+    now = DateTime.utc_now()
+    {:ok, run} = Store.start_run(:standard)
+
+    Store.insert_snapshot(run, %{
+      ts: DateTime.add(now, -60, :second),
+      equity: 990.0,
+      cash: 990.0,
+      realized_pnl: 0.0
+    })
+
+    Store.insert_snapshot(run, %{ts: now, equity: 1030.0, cash: 1030.0, realized_pnl: 0.0})
+
+    summary = Store.period_summary(DateTime.add(now, -3600, :second), now)
+    assert_in_delta summary.equity, 1030.0, 1.0e-6
+  end
+
   test "period summary unrealized from open positions" do
     now = DateTime.utc_now()
 

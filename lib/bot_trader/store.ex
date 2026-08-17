@@ -226,7 +226,15 @@ defmodule BotTrader.Store do
 
     open = open_positions()
 
+    equity =
+      case from(s in Snapshot, where: s.ts <= ^now, order_by: [desc: s.ts], limit: 1)
+           |> Repo.one() do
+        nil -> 0.0
+        snapshot -> snapshot.equity
+      end
+
     %{
+      equity: equity,
       trades: trades,
       realized: realized,
       unrealized: Enum.reduce(open, 0.0, &(&1.unrealized + &2)),
