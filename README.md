@@ -45,6 +45,9 @@ mix run --no-halt  # production entrypoint (scheduler + telegram poller)
 | `WATCHLIST_PATH` | `config/watchlist.json` | Seed watchlist file (first boot only; watchlist persists in SQLite) |
 | `UNIVERSE_PATH` | `config/market_universe.json` | Full US+BR market universe for scanning |
 | `UNIVERSE_SCAN_ENABLED` | `true` | Adds one candidate to the watchlist each run |
+| `MOVER_COUNT` | `5` | Top movers deep-dived per run (market hours) |
+| `MAX_MOVER_POSITION_PCT` | `0.10` | Max capital per mover position |
+| `MARKET_HOURS_ENABLED` | `true` | Skip mover screen when markets closed |
 | `UNIVERSE_QUOTE_CHUNK` | `50` | Symbols per batch quote request |
 | `UNIVERSE_VOLUME_FLOOR` | `1000000` | Volume threshold for the candidate score bonus |
 | `HERMES_MEMORY_PATH` | `/data/hermes_memory.md` | Trade memory file absorbed by Hermes |
