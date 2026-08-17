@@ -258,6 +258,86 @@ defmodule BotTrader.StoreTest do
     assert BotTrader.Store.degraded_alert_due?(DateTime.utc_now()) == true
   end
 
+  test "period summary bounded window" do
+    now = DateTime.utc_now()
+
+    for i <- 1..3 do
+      Store.insert_trade(%{
+        symbol: "BTC",
+        side: if(rem(i, 2) == 0, do: "CLOSE", else: "BUY"),
+        quantity: 1.0,
+        price: 100.0 + i,
+        fee: 0.0,
+        realized_pnl: if(rem(i, 2) == 0, do: i * 1.0, else: nil),
+        ts: DateTime.add(now, -i * 60, :second)
+      })
+    end
+
+    # two old trades outside the window
+    for i <- 1..2 do
+      Store.insert_trade(%{
+        symbol: "ETH",
+        side: "CLOSE",
+        quantity: 1.0,
+        price: 100.0,
+        fee: 0.0,
+        realized_pnl: 99.0,
+        ts: DateTime.add(now, -30 * 3600, :second)
+      })
+    end
+
+    start = DateTime.add(now, -3600, :second)
+    summary = Store.period_summary(start, now)
+    assert summary.trades == 3
+    assert_in_delta summary.realized, 2.0, 1.0e-6
+  end
+
+  test "period summary unrealized from open positions" do
+    now = DateTime.utc_now()
+
+    Store.insert_trade(%{
+      symbol: "BTC",
+      side: "BUY",
+      quantity: 0.1,
+      price: 100.0,
+      fee: 0.0,
+      ts: now,
+      opened_at: now
+    })
+
+    Store.insert_trade(%{
+      symbol: "ETH",
+      side: "BUY",
+      quantity: 0.1,
+      price: 50.0,
+      fee: 0.0,
+      ts: now,
+      opened_at: now
+    })
+
+    {:ok, run} = Store.start_run(:standard)
+
+    Store.insert_signal(run, %{
+      symbol: "BTC",
+      action: "HOLD",
+      confidence: 0.5,
+      model: "flash",
+      price: 112.0
+    })
+
+    Store.insert_signal(run, %{
+      symbol: "ETH",
+      action: "HOLD",
+      confidence: 0.5,
+      model: "flash",
+      price: 46.0
+    })
+
+    summary = Store.period_summary(DateTime.add(now, -3600, :second), now)
+    assert_in_delta summary.unrealized, 0.1 * 12.0 + 0.1 * -4.0, 1.0e-6
+    assert summary.open_positions == 2
+  end
+
   test "last run age computed" do
     now = DateTime.utc_now()
     {:ok, run} = Store.start_run(:standard)

@@ -209,6 +209,31 @@ defmodule BotTrader.Store do
     :ok
   end
 
+  def period_summary(start_ts, now) do
+    trades =
+      from(t in Trade,
+        where: t.ts >= ^start_ts and t.ts <= ^now,
+        select: count(t.id)
+      )
+      |> Repo.one()
+
+    realized =
+      from(t in Trade,
+        where: t.ts >= ^start_ts and t.ts <= ^now,
+        select: coalesce(sum(t.realized_pnl), 0.0)
+      )
+      |> Repo.one()
+
+    open = open_positions()
+
+    %{
+      trades: trades,
+      realized: realized,
+      unrealized: Enum.reduce(open, 0.0, &(&1.unrealized + &2)),
+      open_positions: length(open)
+    }
+  end
+
   def open_positions do
     rows =
       from(t in Trade,
