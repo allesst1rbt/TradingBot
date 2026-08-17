@@ -9,6 +9,8 @@ defmodule BotTrader.Telegram.Poller do
 
   alias BotTrader.{Store, Telegram}
 
+  require Logger
+
   @commands [
     %{command: "status", description: "Current equity, positions, last run"},
     %{command: "hour", description: "Equity change over the last hour"},
@@ -60,9 +62,18 @@ defmodule BotTrader.Telegram.Poller do
 
   defp process_update(update, state) do
     update_id = update["update_id"]
-    message = update["message"]
 
-    Store.put_poller_offset(update_id + 1)
+    try do
+      handle_update_message(update, state)
+      Store.put_poller_offset(update_id + 1)
+    rescue
+      e ->
+        Logger.error("update #{update_id} processing failed: #{Exception.message(e)}")
+    end
+  end
+
+  defp handle_update_message(update, state) do
+    message = update["message"]
 
     if is_map(message) do
       chat_id = get_in(message, ["chat", "id"])
@@ -118,11 +129,6 @@ defmodule BotTrader.Telegram.Poller do
   end
 
   defp open_positions do
-    with {:ok, portfolio} <- BotTrader.State.read(BotTrader.Config.state_dir(), :portfolio, %{}),
-         positions <- portfolio[:positions] || [] do
-      Enum.map(positions, & &1[:symbol])
-    else
-      _ -> []
-    end
+    BotTrader.Store.open_positions() |> Enum.map(& &1.symbol)
   end
 end

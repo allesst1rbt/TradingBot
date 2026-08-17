@@ -62,7 +62,22 @@ defmodule BotTrader.TelegramPollerTest do
     assert_receive {:fetch_offset, offset} when is_integer(offset) or offset == 0, 500
     assert_receive {:sent, "111", text}, 500
     assert text =~ "1000"
-    assert {:ok, 6} = BotTrader.Store.get_poller_offset()
+
+    assert wait_for_offset(6, 50)
+  end
+
+  defp wait_for_offset(expected, attempts) do
+    case BotTrader.Store.get_poller_offset() do
+      {:ok, ^expected} ->
+        true
+
+      _ when attempts > 0 ->
+        Process.sleep(20)
+        wait_for_offset(expected, attempts - 1)
+
+      _ ->
+        false
+    end
   end
 
   test "offset persists across restart" do
@@ -126,6 +141,56 @@ defmodule BotTrader.TelegramPollerTest do
 
     assert Enum.sort(names) ==
              Enum.sort(["status", "hour", "day", "week", "month", "force", "positions"])
+  end
+
+  test "status positions come from store not legacy json" do
+    now = DateTime.utc_now()
+
+    BotTrader.Store.insert_trade(%{
+      symbol: "BTC",
+      side: "BUY",
+      quantity: 0.1,
+      price: 100.0,
+      fee: 0.0,
+      ts: now,
+      opened_at: now
+    })
+
+    ctx = Poller.build_ctx(%{})
+    assert "BTC" in ctx.status.positions
+  end
+
+  test "offset not advanced when processing crashes" do
+    parent = self()
+
+    fetch_fun = fn _offset ->
+      {:ok, [update(50, "/status", "111")]}
+    end
+
+    crashing_ctx = fn _message -> raise "boom" end
+
+    {:ok, pid} =
+      Poller.start_link(
+        fetch_fun: fetch_fun,
+        send_fun: fn _, _ -> :ok end,
+        ctx_builder: crashing_ctx,
+        set_commands_fun: fn _ -> :ok end,
+        poll_ms: 10,
+        poll_once: true,
+        name: nil
+      )
+
+    on_exit(fn ->
+      try do
+        GenServer.stop(pid)
+      catch
+        :exit, _ -> :ok
+      end
+    end)
+
+    Process.sleep(100)
+    assert {:ok, offset} = BotTrader.Store.get_poller_offset()
+    assert offset == nil or offset < 50
   end
 
   test "ignores non-command messages" do
