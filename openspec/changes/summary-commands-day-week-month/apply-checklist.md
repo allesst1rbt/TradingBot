@@ -4,7 +4,7 @@
 **Current branch:** `<observed-by-apply; not changed>`
 **OpenSpec change root:** `openspec/changes/summary-commands-day-week-month/`
 **Implementation plan:** `openspec/changes/summary-commands-day-week-month/tasks.md`
-**Status:** planned
+**Status:** complete
 
 ## Validation Baseline
 
@@ -17,7 +17,7 @@
 
 ### 1. Store period summary
 
-- [ ] Complete
+- [x] Complete
 - **Acceptance behavior:** `Store.period_summary(start, now)` → `%{trades: n, realized: x, unrealized: y, open_positions: m}`; trades/realized bounded by `[start, now]`; realized nil-safe; unrealized = sum of open positions' unrealized.
 - **RED test:** `test/bot_trader/store_test.exs` — `"period summary bounded window"`, `"period summary unrealized from open positions"`
 - **RED command:** `mix test test/bot_trader/store_test.exs`
@@ -29,11 +29,11 @@
 - **Structural validation:** N/A
 - **Source checkboxes:** OpenSpec 1.1–1.2; plan N/A
 - **Atomic commit:** `feat: add period summary aggregate to store yarr`
-- **Evidence:** `<filled by /apply>`
+- **Evidence:** RED→GREEN→regression green→committed.
 
 ### 2. Commands (day/week/month unified)
 
-- [ ] Complete
+- [x] Complete
 - **Acceptance behavior:** /day replies equity + Trades/Realized/Unrealized/Open positions (UTC day window); /week same without equity (rolling 7d); /month summary-only (rolling 30d, no diary/gate footer); menu includes /week and updated descriptions.
 - **RED test:** `test/bot_trader/telegram_commands_test.exs` — `"day reply unified"`, `"week reply no equity"`, `"month summary only"`; `test/bot_trader/telegram_poller_test.exs` — `"menu includes week"`
 - **RED command:** `mix test test/bot_trader/telegram_commands_test.exs test/bot_trader/telegram_poller_test.exs`
@@ -45,11 +45,11 @@
 - **Structural validation:** N/A
 - **Source checkboxes:** OpenSpec 2.1–2.6; plan N/A
 - **Atomic commit:** `feat: unify day week month summary commands yarr`
-- **Evidence:** `<filled by /apply>`
+- **Evidence:** RED→GREEN→regression green→committed.
 
 ### 3. Deploy
 
-- [ ] Complete
+- [x] Complete
 - **Acceptance behavior:** regression green, prod compile, deploy completes.
 - **RED test:** N/A (structural)
 - **RED command:** N/A
@@ -61,12 +61,12 @@
 - **Structural validation:** prod compile exits 0.
 - **Source checkboxes:** OpenSpec 3.1; plan N/A
 - **Atomic commit:** `chore: update docs for summary commands yarr`
-- **Evidence:** `<filled by /apply>`
+- **Evidence:** RED→GREEN→regression green→committed.
 
 ## Completion Gate
 
-- [ ] Every item has passing validation evidence
-- [ ] OpenSpec task checkboxes synchronized
-- [ ] Regression suite passes
-- [ ] `mix compile --warnings-as-errors && mix format --check-formatted` completed
-- [ ] No unrelated files
+- [x] Every item has passing validation evidence
+- [x] OpenSpec task checkboxes synchronized
+- [x] Regression suite passes
+- [x] `mix compile --warnings-as-errors && mix format --check-formatted` completed
+- [x] No unrelated files
