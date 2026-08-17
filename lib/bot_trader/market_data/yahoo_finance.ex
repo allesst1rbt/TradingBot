@@ -50,22 +50,47 @@ defmodule BotTrader.MarketData.YahooFinance do
 
   def quotes(symbols, opts \\ []) do
     url = Config.yahoo_base_url() <> "/v7/finance/quote"
-    chunk = Config.universe_quote_chunk()
+    chunk = opts[:chunk_size] || Config.universe_quote_chunk()
+    interval = opts[:min_interval_ms] || 150
+    retry_429 = Keyword.get(opts, :retry_429, true)
 
     results =
       symbols
       |> Enum.chunk_every(chunk)
       |> Enum.map(fn chunk_symbols ->
-        params = [symbols: Enum.join(chunk_symbols, ",")]
+        result = fetch_quotes_chunk(url, chunk_symbols, opts)
 
-        case Req.get(url, Keyword.merge([params: params], opts)) do
-          {:ok, %Req.Response{status: 200, body: body}} -> parse_quotes(body)
-          _ -> []
+        if retry_429 and result == :rate_limited do
+          Process.sleep(interval * 2)
+          fetch_quotes_chunk(url, chunk_symbols, opts)
+        else
+          result
         end
       end)
-      |> List.flatten()
+      |> Enum.flat_map(fn
+        {:ok, quotes} -> quotes
+        _ -> []
+      end)
 
     {:ok, results}
+  end
+
+  defp fetch_quotes_chunk(url, chunk_symbols, opts) do
+    params = [symbols: Enum.join(chunk_symbols, ",")]
+    interval = opts[:min_interval_ms] || 150
+    req_opts = Keyword.drop(opts, [:chunk_size, :min_interval_ms, :retry_429])
+
+    case Req.get(url, Keyword.merge([params: params], req_opts)) do
+      {:ok, %Req.Response{status: 200, body: body}} ->
+        {:ok, parse_quotes(body)}
+
+      {:ok, %Req.Response{status: 429}} ->
+        :rate_limited
+
+      _ ->
+        {:error, :http_error}
+    end
+    |> tap(fn _ -> Process.sleep(interval) end)
   end
 
   defp parse_quotes(body) do

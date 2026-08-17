@@ -228,6 +228,50 @@ defmodule BotTrader.MarketDataTest do
     assert Enum.find(quotes, &(&1.symbol == "MSFT")).volume == 20_000_000
   end
 
+  test "rate disciplined chunk timing" do
+    parent = self()
+    timestamps = :ets.new(:ts, [:set])
+
+    Req.Test.stub(YahooFinance, fn conn ->
+      :ets.insert(timestamps, {System.monotonic_time(:millisecond)})
+      Req.Test.json(conn, @quote_body)
+    end)
+
+    {:ok, _} =
+      YahooFinance.quotes(Enum.map(1..60, &"S#{&1}"),
+        plug: {Req.Test, YahooFinance},
+        chunk_size: 25,
+        min_interval_ms: 50
+      )
+
+    times = :ets.tab2list(timestamps) |> Enum.map(&elem(&1, 0)) |> Enum.sort()
+    assert length(times) >= 3
+
+    times
+    |> Enum.chunk_every(2, 1, :discard)
+    |> Enum.each(fn [a, b] -> assert b - a >= 50 end)
+  end
+
+  test "429 partial results no crash" do
+    attempts = :ets.new(:a429, [:set])
+    :ets.insert(attempts, {:n, 0})
+
+    Req.Test.stub(YahooFinance, fn conn ->
+      :ets.update_counter(attempts, :n, 1)
+      Plug.Conn.send_resp(conn, 429, "rate limited")
+    end)
+
+    {:ok, quotes} =
+      YahooFinance.quotes(["A", "B"],
+        plug: {Req.Test, YahooFinance},
+        chunk_size: 25,
+        min_interval_ms: 1,
+        retry_429: false
+      )
+
+    assert quotes == []
+  end
+
   test "missing symbols dropped" do
     Req.Test.stub(YahooFinance, fn conn ->
       Req.Test.json(conn, @quote_body)
