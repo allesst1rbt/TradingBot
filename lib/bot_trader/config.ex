@@ -27,6 +27,7 @@ defmodule BotTrader.Config do
   def universe_volume_floor, do: env_int("UNIVERSE_VOLUME_FLOOR", 1_000_000)
   def universe_scan_enabled, do: env("UNIVERSE_SCAN_ENABLED", "true") == "true"
   def universe_scan_every_n_runs, do: env_int("UNIVERSE_SCAN_EVERY_N_RUNS", 30)
+  def hermes_memory_path, do: env("HERMES_MEMORY_PATH", "/data/hermes_memory.md")
 
   def yahoo_base_url, do: env("YAHOO_BASE_URL", "https://query1.finance.yahoo.com")
   def coingecko_base_url, do: env("COINGECKO_BASE_URL", "https://api.coingecko.com")
