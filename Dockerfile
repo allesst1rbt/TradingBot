@@ -21,6 +21,7 @@ RUN ln -sf /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm && 
 COPY package.json /opt/tradingview/package.json
 RUN npm install --prefix /opt/tradingview --omit=dev --no-audit --no-fund && \
     npx --prefix /opt/tradingview playwright install --with-deps chromium
+COPY priv/tradingview_scraper.mjs /opt/tradingview/tradingview_scraper.mjs
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 

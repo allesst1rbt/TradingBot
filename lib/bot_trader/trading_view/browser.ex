@@ -43,7 +43,13 @@ defmodule BotTrader.TradingView.Browser do
   end
 
   defp fetch_with_playwright(entry) do
-    script = Application.get_env(:bot_trader, :tradingview_script, "priv/tradingview_scraper.mjs")
+    script =
+      Application.get_env(
+        :bot_trader,
+        :tradingview_script,
+        System.get_env("TRADINGVIEW_SCRIPT", "/opt/tradingview/tradingview_scraper.mjs")
+      )
+
     node = System.get_env("NODE_BIN", "node")
     url = tradingview_url(entry)
     args = [script, Jason.encode!(%{url: url, timeout: 30_000})]
