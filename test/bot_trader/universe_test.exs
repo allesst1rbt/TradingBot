@@ -55,6 +55,35 @@ defmodule BotTrader.UniverseTest do
     assert Enum.any?(watchlist, &(&1.symbol == "ZZZZ"))
   end
 
+  test "top movers ranked with exclusions" do
+    quotes = [
+      %{symbol: "AAA", day_change_pct: 8.0, volume: 5_000_000},
+      %{symbol: "BBB", day_change_pct: 6.0, volume: 5_000_000},
+      %{symbol: "CCC", day_change_pct: 4.0, volume: 100_000},
+      %{symbol: "DDD", day_change_pct: 3.0, volume: 5_000_000},
+      %{symbol: "EEE", day_change_pct: 2.0, volume: 5_000_000},
+      %{symbol: "FFF", day_change_pct: 1.0, volume: 5_000_000}
+    ]
+
+    movers = Universe.top_movers(quotes, ["AAA", "CCC"], 3)
+
+    assert movers == [
+             %{symbol: "BBB", asset_class: :stock_us},
+             %{symbol: "DDD", asset_class: :stock_us},
+             %{symbol: "EEE", asset_class: :stock_us}
+           ]
+  end
+
+  test "no eligible movers returns none" do
+    quotes = [%{symbol: "AAA", day_change_pct: 8.0, volume: 5_000_000}]
+    assert :none = Universe.top_movers(quotes, ["AAA"], 3)
+  end
+
+  test "top movers fewer than n returns available" do
+    quotes = [%{symbol: "AAA", day_change_pct: 8.0, volume: 5_000_000}]
+    assert [%{symbol: "AAA", asset_class: :stock_us}] = Universe.top_movers(quotes, [], 5)
+  end
+
   test "scan failure non-fatal" do
     quotes_fun = fn _symbols -> {:error, :http_error} end
 

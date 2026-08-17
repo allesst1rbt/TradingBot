@@ -33,6 +33,33 @@ defmodule BotTrader.Universe do
     end
   end
 
+  def top_movers(quotes, exclude, n) do
+    eligible = Enum.reject(quotes, &(&1.symbol in exclude))
+
+    case eligible
+         |> Enum.sort_by(&score/1, :desc)
+         |> Enum.take(n) do
+      [] ->
+        :none
+
+      movers ->
+        Enum.map(movers, fn m -> %{symbol: m.symbol, asset_class: asset_class_of(m.symbol)} end)
+    end
+  end
+
+  defp asset_class_of(symbol) do
+    case load_universe() do
+      {:ok, entries} ->
+        case Enum.find(entries, &(&1.symbol == symbol)) do
+          nil -> :stock_us
+          entry -> String.to_atom(entry.asset_class)
+        end
+
+      _ ->
+        :stock_us
+    end
+  end
+
   def scan_and_add(opts \\ []) do
     quotes_fun = opts[:quotes_fun] || (&MarketData.YahooFinance.quotes/1)
 

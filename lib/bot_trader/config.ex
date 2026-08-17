@@ -16,7 +16,7 @@ defmodule BotTrader.Config do
   def llm_model_pro, do: env("LLM_MODEL_PRO", "deepseek-v4-pro")
   def volatility_threshold, do: env_float("VOLATILITY_THRESHOLD", 0.02)
   def llm_call_budget_per_run, do: env_int("LLM_CALL_BUDGET_PER_RUN", 10)
-  def daily_call_budget, do: env_int("DAILY_CALL_BUDGET", 2400)
+  def daily_call_budget, do: env_int("DAILY_CALL_BUDGET", 5000)
   def min_hold_minutes, do: env_int("MIN_HOLD_MINUTES", 15)
   def run_interval_ms, do: env_int("RUN_INTERVAL_MS", 300_000)
   def analysis_interval, do: env("ANALYSIS_INTERVAL", "15m")
@@ -26,6 +26,9 @@ defmodule BotTrader.Config do
   def universe_quote_chunk, do: env_int("UNIVERSE_QUOTE_CHUNK", 50)
   def universe_volume_floor, do: env_int("UNIVERSE_VOLUME_FLOOR", 1_000_000)
   def universe_scan_enabled, do: env("UNIVERSE_SCAN_ENABLED", "true") == "true"
+  def mover_count, do: env_int("MOVER_COUNT", 5)
+  def max_mover_position_pct, do: env_float("MAX_MOVER_POSITION_PCT", 0.10)
+  def market_hours_enabled, do: env("MARKET_HOURS_ENABLED", "true") == "true"
   def universe_scan_every_n_runs, do: env_int("UNIVERSE_SCAN_EVERY_N_RUNS", 30)
   def hermes_memory_path, do: env("HERMES_MEMORY_PATH", "/data/hermes_memory.md")
 
@@ -65,7 +68,7 @@ defmodule BotTrader.Config do
   def usd_brl_rate, do: env_float("USD_BRL_RATE", 5.5)
 
   def max_position_pct, do: env_float("MAX_POSITION_PCT", 0.25)
-  def max_positions, do: env_int("MAX_POSITIONS", 6)
+  def max_positions, do: env_int("MAX_POSITIONS", 10)
   def stop_loss_pct, do: env_float("STOP_LOSS_PCT", 0.05)
   def daily_loss_pct, do: env_float("DAILY_LOSS_PCT", 0.03)
 
