@@ -12,8 +12,9 @@ defmodule BotTrader.Telegram.Poller do
   @commands [
     %{command: "status", description: "Current equity, positions, last run"},
     %{command: "hour", description: "Equity change over the last hour"},
-    %{command: "day", description: "Today's diary"},
-    %{command: "month", description: "30-day diary and gate countdown"},
+    %{command: "day", description: "Today's trades, P&L and open positions"},
+    %{command: "week", description: "Last 7 days summary"},
+    %{command: "month", description: "Last 30 days summary"},
     %{command: "force", description: "Run the analysis pipeline now"},
     %{command: "positions", description: "Open positions and trade history"}
   ]
@@ -95,8 +96,10 @@ defmodule BotTrader.Telegram.Poller do
         last_run_minutes_ago: Store.last_run_age_minutes(now)
       },
       hour: Store.hourly_delta(now),
-      day: Store.day_diary(DateTime.to_date(now)),
-      month: Store.month_diary(30, now),
+      day:
+        Store.period_summary(DateTime.new!(DateTime.to_date(now), ~T[00:00:00], "Etc/UTC"), now),
+      week: Store.period_summary(DateTime.add(now, -7 * 24 * 3600, :second), now),
+      month: Store.period_summary(DateTime.add(now, -30 * 24 * 3600, :second), now),
       force: fn -> BotTrader.Scheduler.force(BotTrader.Scheduler) end,
       positions: fn page ->
         {open, trades, total_pages} = BotTrader.Store.positions_page(page, 20)

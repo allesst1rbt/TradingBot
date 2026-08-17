@@ -123,7 +123,9 @@ defmodule BotTrader.TelegramPollerTest do
 
     assert_receive {:commands, commands}, 500
     names = Enum.map(commands, & &1.command)
-    assert Enum.sort(names) == Enum.sort(["status", "hour", "day", "month", "force", "positions"])
+
+    assert Enum.sort(names) ==
+             Enum.sort(["status", "hour", "day", "week", "month", "force", "positions"])
   end
 
   test "ignores non-command messages" do

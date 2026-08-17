@@ -3,6 +3,14 @@ defmodule BotTrader.TelegramCommandsTest do
 
   alias BotTrader.Telegram.Commands
 
+  defp summary_ctx do
+    %{
+      day: %{equity: 1000.0, trades: 3, realized: 5.0, unrealized: 1.2, open_positions: 2},
+      week: %{trades: 4, realized: -2.5, unrealized: 0.4, open_positions: 2},
+      month: %{trades: 15, realized: 12.0, unrealized: -1.0, open_positions: 2}
+    }
+  end
+
   defp ctx do
     %{
       status: %{equity: 1030.0, positions: ["BTC"], last_run_minutes_ago: 2},
@@ -27,19 +35,6 @@ defmodule BotTrader.TelegramCommandsTest do
     assert {:reply, text} = Commands.dispatch("/hour", ctx())
     assert text =~ "5.0"
     assert text =~ "1"
-  end
-
-  test "/day returns diary" do
-    assert {:reply, text} = Commands.dispatch("/day", ctx())
-    assert text =~ "12.0"
-    assert text =~ "3"
-  end
-
-  test "/month lists rows with gate countdown" do
-    assert {:reply, text} = Commands.dispatch("/month", ctx())
-    assert text =~ "2026-08-16"
-    assert text =~ "2026-08-15"
-    assert text =~ "Gate"
   end
 
   test "/force acks and triggers" do
@@ -152,6 +147,33 @@ defmodule BotTrader.TelegramCommandsTest do
 
     assert {:reply, text} = Commands.dispatch("/positions", positions_ctx)
     assert text =~ "No open positions"
+  end
+
+  test "day reply unified" do
+    assert {:reply, text} = Commands.dispatch("/day", summary_ctx())
+    assert text =~ "Trades: 3"
+    assert text =~ "Realized: +5.00"
+    assert text =~ "Unrealized: +1.20"
+    assert text =~ "Open positions: 2"
+    assert text =~ "1000"
+  end
+
+  test "week reply no equity" do
+    assert {:reply, text} = Commands.dispatch("/week", summary_ctx())
+    assert text =~ "Trades: 4"
+    assert text =~ "Realized: -2.50"
+    assert text =~ "Unrealized: +0.40"
+    assert text =~ "Open positions: 2"
+    refute text =~ "1000"
+  end
+
+  test "month summary only" do
+    assert {:reply, text} = Commands.dispatch("/month", summary_ctx())
+    assert text =~ "Trades: 15"
+    assert text =~ "Realized: +12.00"
+    assert text =~ "Unrealized: -1.00"
+    assert text =~ "Open positions: 2"
+    refute text =~ "Gate evaluation"
   end
 
   test "ignores non-command" do
