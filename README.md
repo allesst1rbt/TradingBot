@@ -14,8 +14,9 @@ mix run --no-halt  # production entrypoint (scheduler + telegram poller)
 
 - `/status` — equity, positions, last run age
 - `/hour` — equity change over the last hour
-- `/day` — today's diary
-- `/month` — 30-day diary + gate countdown
+- `/day` — today's trades, P&L and open positions
+- `/week` — last 7 days summary
+- `/month` — last 30 days summary
 - `/force` — run the pipeline now (queued if a run is executing)
 - `/positions [N]` — open positions + paginated trade history
 
