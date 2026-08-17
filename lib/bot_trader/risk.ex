@@ -63,9 +63,12 @@ defmodule BotTrader.Risk do
     new_qty = order_quantity(order)
     rate = if order.asset_class == :stock_us, do: Config.usd_brl_rate(), else: 1.0
     projected = (existing_qty + new_qty) * order.price * rate
-    limit = Config.max_position_pct() * portfolio.cash
+    limit = position_cap_pct(order) * portfolio.cash
     projected > limit
   end
+
+  defp position_cap_pct(%{source: :mover}), do: Config.max_mover_position_pct()
+  defp position_cap_pct(_), do: Config.max_position_pct()
 
   defp min_hold_violated?(_portfolio, _order, nil), do: false
 

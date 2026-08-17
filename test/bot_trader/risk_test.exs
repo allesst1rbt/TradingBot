@@ -107,6 +107,45 @@ defmodule BotTrader.RiskTest do
     assert :ok = Risk.precheck(portfolio, close)
   end
 
+  test "mover buy over 10 percent rejected" do
+    portfolio = Portfolio.init()
+
+    order = %{
+      type: :buy,
+      symbol: "BTC",
+      asset_class: :crypto,
+      notional: 150.0,
+      price: 100.0,
+      source: :mover
+    }
+
+    assert {:error, :max_position_size} = Risk.precheck(portfolio, order)
+  end
+
+  test "mover buy under 10 percent allowed" do
+    portfolio = Portfolio.init()
+
+    order = %{
+      type: :buy,
+      symbol: "BTC",
+      asset_class: :crypto,
+      notional: 90.0,
+      price: 100.0,
+      source: :mover
+    }
+
+    assert :ok = Risk.precheck(portfolio, order)
+  end
+
+  test "watchlist 25 percent unaffected" do
+    portfolio = Portfolio.init()
+    order = %{type: :buy, symbol: "BTC", asset_class: :crypto, notional: 200.0, price: 100.0}
+    assert :ok = Risk.precheck(portfolio, order)
+
+    over = %{type: :buy, symbol: "BTC", asset_class: :crypto, notional: 300.0, price: 100.0}
+    assert {:error, :max_position_size} = Risk.precheck(portfolio, over)
+  end
+
   test "daily loss under limit allows buys" do
     portfolio = %{Portfolio.init() | day_realized_loss: 29.9, start_of_day_cash: 1000.0}
     assert :ok = Risk.precheck(portfolio, buy_order(50.0))
