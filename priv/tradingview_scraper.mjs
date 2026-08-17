@@ -13,11 +13,15 @@ try {
     const meta = (name) => document.querySelector(`meta[name="${name}"]`)?.content ?? null;
     const numeric = (value) => {
       if (!value) return null;
-      const match = String(value).replace(/,/g, "").match(/-?\d+(?:\.\d+)?/);
+      const raw = String(value).trim().replace(/%/g, "");
+      const normalized = raw.includes(",")
+        ? raw.replace(/\./g, "").replace(",", ".")
+        : raw.replace(/,/g, "");
+      const match = normalized.match(/-?\d+(?:\.\d+)?/);
       return match ? Number(match[0]) : null;
     };
     const priceNode = document.querySelector('[data-name="instrument-header-details"] [class*="price"]');
-    const price = numeric(priceNode?.textContent) ?? numeric(text.match(/Price\s+(-?\d[\d,.]*)/i)?.[1]);
+    const price = numeric(priceNode?.textContent) ?? numeric(text.match(/\n(-?\d[\d.,]*)\nD\n(?:BRL|USD|EUR)/)?.[1]) ?? numeric(text.match(/Price\s+(-?\d[\d.,]*)/i)?.[1]);
     const change = numeric(text.match(/Change\s+(-?\d[\d,.]*)\s*%?/i)?.[1]);
     const volume = numeric(text.match(/Volume\s+([\d,.]+)/i)?.[1]);
     const title = document.title || meta("title");
