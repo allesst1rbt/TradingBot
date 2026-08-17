@@ -72,7 +72,8 @@ defmodule BotTrader.Telegram.Commands do
 
       history =
         Enum.map_join(trades, "\n", fn t ->
-          pnl = if t[:realized_pnl], do: " pnl=#{fmt(t[:realized_pnl])}", else: ""
+          pnl =
+            if Map.get(t, :realized_pnl), do: " pnl=#{fmt(Map.get(t, :realized_pnl))}", else: ""
 
           "  #{t.symbol} #{t.side} qty=#{t.quantity} price=#{fmt(t.price)} fee=#{fmt(t.fee)}#{pnl}"
         end)

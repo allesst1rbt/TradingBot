@@ -122,6 +122,28 @@ defmodule BotTrader.TelegramCommandsTest do
     assert text =~ "no such page"
   end
 
+  test "positions handles ecto trade structs" do
+    trade =
+      struct(BotTrader.Trade, %{
+        symbol: "PETR4",
+        side: "BUY",
+        quantity: 5.0,
+        price: 42.0,
+        fee: 5.0,
+        realized_pnl: nil,
+        ts: ~U[2026-08-16 12:00:00Z]
+      })
+
+    positions_ctx =
+      Map.put(ctx(), :positions, fn _page ->
+        {[], [trade], 1, 1}
+      end)
+
+    assert {:reply, text} = Commands.dispatch("/positions", positions_ctx)
+    assert text =~ "PETR4"
+    assert text =~ "page 1/1"
+  end
+
   test "positions no open" do
     positions_ctx =
       Map.put(ctx(), :positions, fn _page ->
