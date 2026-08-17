@@ -1,6 +1,8 @@
 defmodule BotTrader.RunnerTest do
   use ExUnit.Case, async: false
 
+  import Ecto.Query
+
   alias BotTrader.Runner
 
   setup_all do
@@ -283,6 +285,66 @@ defmodule BotTrader.RunnerTest do
     assert "AAA" in symbols
   end
 
+  test "trade absorbed into hermes memory", %{dir: dir} do
+    mem_path = Path.join(dir, "hermes_memory.md")
+    System.put_env("HERMES_MEMORY_PATH", mem_path)
+    on_exit(fn -> System.delete_env("HERMES_MEMORY_PATH") end)
+
+    assert {:ok, _} = Runner.run(deps(dir, signal_json()), :standard)
+
+    assert File.exists?(mem_path)
+    content = File.read!(mem_path)
+    assert content =~ "BUY"
+    assert content =~ "fixture"
+  end
+
+  test "memory failure non-fatal with run note", %{dir: dir} do
+    System.put_env("HERMES_MEMORY_PATH", "/dev/null/nope/mem.md")
+    on_exit(fn -> System.delete_env("HERMES_MEMORY_PATH") end)
+
+    assert {:ok, summary} = Runner.run(deps(dir, signal_json()), :standard)
+    assert summary.trades_executed == 1
+
+    latest = BotTrader.Repo.one(from(r in BotTrader.Run, order_by: [desc: r.id], limit: 1))
+    assert latest.note =~ "memory"
+  end
+
+  test "rolling summary shows open position", %{dir: dir} do
+    System.put_env("HERMES_MEMORY_PATH", Path.join(dir, "mem.md"))
+    on_exit(fn -> System.delete_env("HERMES_MEMORY_PATH") end)
+
+    llm = fn messages, _model ->
+      send(self(), {:prompt, Enum.map_join(messages, " ", & &1.content)})
+      {:ok, openai_body(signal_json(action: "HOLD", confidence: 0.1))}
+    end
+
+    deps = deps(dir, signal_json(action: "HOLD", confidence: 0.1)) |> Map.put(:llm, llm)
+    assert {:ok, _} = Runner.run(deps, :standard)
+
+    # first run: no position yet (buy happened this run for BTC? signal is HOLD -> no trade)
+    prompt = receive_messages() |> Enum.find(&(is_binary(&1) and String.contains?(&1, "Rolling")))
+    assert prompt == nil or prompt =~ "position: none"
+  end
+
+  test "rolling summary shows position on later run", %{dir: dir} do
+    System.put_env("HERMES_MEMORY_PATH", Path.join(dir, "mem.md"))
+    on_exit(fn -> System.delete_env("HERMES_MEMORY_PATH") end)
+
+    assert {:ok, _} = Runner.run(deps(dir, signal_json()), :standard)
+
+    llm = fn messages, _model ->
+      send(self(), {:prompt2, Enum.map_join(messages, " ", & &1.content)})
+      {:ok, openai_body(signal_json(action: "HOLD", confidence: 0.1))}
+    end
+
+    deps2 = deps(dir, signal_json(action: "HOLD", confidence: 0.1)) |> Map.put(:llm, llm)
+    assert {:ok, _} = Runner.run(deps2, :standard)
+
+    prompts = collect_prompt2()
+    assert length(prompts) == 1
+    assert hd(prompts) =~ "position: 0.9995"
+  end
+
   test "scan failure non-fatal keeps watchlist", %{dir: dir} do
     System.put_env("UNIVERSE_SCAN_ENABLED", "true")
     on_exit(fn -> System.delete_env("UNIVERSE_SCAN_ENABLED") end)
@@ -321,6 +383,14 @@ defmodule BotTrader.RunnerTest do
       BotTrader.Store.get_last_signal("BTC")
 
     assert signal.model == "deepseek-v4-flash"
+  end
+
+  defp collect_prompt2(acc \\ []) do
+    receive do
+      {:prompt2, text} -> collect_prompt2([text | acc])
+    after
+      50 -> Enum.reverse(acc)
+    end
   end
 
   defp receive_messages(acc \\ []) do

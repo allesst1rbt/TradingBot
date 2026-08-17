@@ -149,6 +149,8 @@ defmodule BotTrader.Runner do
           reason: trade[:reason] && to_string(trade.reason),
           ts: trade.ts
         })
+
+        absorb_into_memory(trade, signals, run_row)
       end)
 
       equity =
@@ -409,6 +411,16 @@ defmodule BotTrader.Runner do
 
   defp rolling_summary(symbol) do
     context = Store.rolling_context(symbol, DateTime.utc_now())
+
+    context =
+      case Enum.find(Store.open_positions(), &(&1.symbol == symbol)) do
+        nil ->
+          context
+
+        position ->
+          %{context | position: %{quantity: position.quantity, entry_price: position.entry}}
+      end
+
     Research.build_rolling_summary(context)
   end
 
@@ -467,6 +479,22 @@ defmodule BotTrader.Runner do
       _ ->
         fn messages, model -> LLM.chat(messages, model: model) end
     end
+  end
+
+  defp absorb_into_memory(trade, signals, run_row) do
+    rationale =
+      Enum.find(signals, &(&1.symbol == trade.symbol))
+      |> case do
+        nil -> ""
+        signal -> signal.rationale || ""
+      end
+
+    case BotTrader.HermesMemory.append_trade(trade, rationale) do
+      :ok -> :ok
+      {:error, reason} -> Store.note_run(run_row, "memory write failed: #{inspect(reason)}")
+    end
+  rescue
+    _ -> Store.note_run(run_row, "memory write failed")
   end
 
   defp default_news do
