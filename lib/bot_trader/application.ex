@@ -32,6 +32,44 @@ defmodule BotTrader.Application do
       {BotTrader.Telegram.Poller, name: BotTrader.Telegram.Poller}
     ]
 
+    children =
+      if Mix.env() != :test and BotTrader.Config.tradingview_enabled() do
+        entries =
+          case BotTrader.Universe.load_universe() do
+            {:ok, entries} -> entries
+            _ -> []
+          end
+
+        {:ok, cursor} = BotTrader.TradingViewStore.get_cursor("stocks")
+
+        scraper = %{
+          entries: entries,
+          batch_size: BotTrader.Config.tradingview_batch_size(),
+          cursor: cursor,
+          scrape_fun: fn batch ->
+            BotTrader.TradingView.Browser.scrape_batch(batch,
+              max_concurrency: BotTrader.Config.tradingview_max_concurrency()
+            )
+          end,
+          persist_fun: fn results ->
+            Enum.each(results, fn result ->
+              if Map.get(result, :timestamp) do
+                BotTrader.TradingViewStore.insert_snapshot(result)
+              end
+            end)
+          end,
+          cursor_fun: fn next_cursor ->
+            BotTrader.TradingViewStore.put_cursor("stocks", next_cursor)
+          end,
+          auto_start: true,
+          name: BotTrader.TradingView.Scheduler
+        }
+
+        children ++ [{BotTrader.TradingView.Scheduler, scraper}]
+      else
+        children
+      end
+
     opts = [strategy: :one_for_one, name: BotTrader.Supervisor]
     Supervisor.start_link(children, opts)
   end

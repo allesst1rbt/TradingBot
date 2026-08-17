@@ -22,19 +22,24 @@ defmodule BotTrader.Runner do
 
       watchlist_signals = analyze_all(watchlist, portfolio, deps, kind, "watchlist")
 
+      now = deps[:now] || DateTime.utc_now()
+
       mover_signals =
-        if Config.market_hours_enabled() and Config.market_open?(deps[:now] || DateTime.utc_now()) do
+        if Config.market_hours_enabled() and Config.market_open?(now) and
+             Store.mover_screen_due?(now) do
           mover_fun = deps[:mover_fun] || (&BotTrader.Universe.screen_movers/0)
 
-          case mover_fun.() do
-            movers when is_list(movers) ->
-              Enum.map(movers, fn mover ->
-                analyze(mover, portfolio, deps, kind, "mover")
-              end)
+          movers =
+            case mover_fun.() do
+              movers when is_list(movers) -> movers
+              _ -> []
+            end
 
-            _ ->
-              []
-          end
+          Store.put_mover_screen_ts(now)
+
+          Enum.map(movers, fn mover ->
+            analyze(mover, portfolio, deps, kind, "mover")
+          end)
         else
           []
         end
@@ -345,7 +350,8 @@ defmodule BotTrader.Runner do
     llm_fun = deps[:llm] || default_llm()
     model = model_for(kind)
 
-    with {:ok, candles} <- candles_fun.(symbol, 90),
+    with {:ok, candles} <-
+           BotTrader.CandleCache.fetch(symbol, 90, fn -> candles_fun.(symbol, 90) end),
          false <- candles == [] do
       closes = Enum.map(candles, & &1.close)
 

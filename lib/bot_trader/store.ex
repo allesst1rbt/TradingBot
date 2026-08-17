@@ -6,7 +6,7 @@ defmodule BotTrader.Store do
 
   import Ecto.Query
 
-  alias BotTrader.{News, PollerState, Repo, Run, Signal, Snapshot, Trade, WatchlistEntry}
+  alias BotTrader.{Config, News, PollerState, Repo, Run, Signal, Snapshot, Trade, WatchlistEntry}
 
   def start_run(kind) do
     run =
@@ -145,6 +145,24 @@ defmodule BotTrader.Store do
         last = state.value |> String.to_integer() |> DateTime.from_unix!()
         DateTime.diff(now, last, :second) > 24 * 3600
     end
+  end
+
+  def mover_screen_due?(now) do
+    case Repo.get(PollerState, "mover_screen_ts") do
+      nil ->
+        true
+
+      state ->
+        last = state.value |> String.to_integer() |> DateTime.from_unix!()
+        DateTime.diff(now, last, :second) >= Config.universe_screen_every_minutes() * 60
+    end
+  end
+
+  def put_mover_screen_ts(ts) do
+    %PollerState{key: "mover_screen_ts", value: DateTime.to_unix(ts) |> Integer.to_string()}
+    |> Repo.insert!(on_conflict: :replace_all, conflict_target: [:key])
+
+    :ok
   end
 
   def get_budget_alert do

@@ -88,6 +88,14 @@ defmodule BotTrader.RunnerTest do
       row -> BotTrader.Repo.delete!(row)
     end
 
+    BotTrader.Repo.get_by(BotTrader.PollerState, key: "mover_screen_ts")
+    |> case do
+      nil -> :ok
+      row -> BotTrader.Repo.delete!(row)
+    end
+
+    BotTrader.CandleCache.clear()
+
     BotTrader.Store.seed_watchlist(
       Enum.map(@watchlist, fn e ->
         %{symbol: e.symbol, asset_class: Atom.to_string(e.asset_class), coin_id: e[:coin_id]}
@@ -335,6 +343,55 @@ defmodule BotTrader.RunnerTest do
     on_exit(fn -> System.delete_env("MARKET_HOURS_ENABLED") end)
 
     assert {:ok, _} = Runner.run(deps, :standard)
+  end
+
+  test "candle cache reuses fetch within window", %{dir: dir} do
+    parent = self()
+
+    candles_fun = fn _symbol, _days ->
+      send(parent, :fetched)
+      {:ok, @candles}
+    end
+
+    deps =
+      deps(dir, signal_json(action: "HOLD", confidence: 0.1))
+      |> Map.put(:candles, candles_fun)
+      |> Map.put(:now, ~U[2026-08-14 15:00:00Z])
+
+    assert {:ok, _} = Runner.run(deps, :standard)
+    assert_received :fetched
+
+    assert {:ok, _} = Runner.run(deps, :standard)
+    refute_received :fetched
+  end
+
+  test "mover screen gated hourly", %{dir: dir} do
+    System.put_env("MARKET_HOURS_ENABLED", "true")
+    on_exit(fn -> System.delete_env("MARKET_HOURS_ENABLED") end)
+
+    mover_fun = fn ->
+      [%{symbol: "ZZZ", asset_class: :stock_us}]
+    end
+
+    deps =
+      deps(dir, signal_json(action: "HOLD", confidence: 0.1))
+      |> Map.put(:mover_fun, mover_fun)
+      |> Map.put(:now, ~U[2026-08-14 15:00:00Z])
+
+    BotTrader.Repo.get_by(BotTrader.PollerState, key: "mover_screen_ts")
+    |> case do
+      nil -> :ok
+      row -> BotTrader.Repo.delete!(row)
+    end
+
+    assert {:ok, _} = Runner.run(deps, :standard)
+    {:ok, signal} = BotTrader.Store.get_last_signal("ZZZ")
+    assert signal.source == "mover"
+
+    BotTrader.Repo.delete_all(BotTrader.Signal)
+
+    assert {:ok, _} = Runner.run(deps, :standard)
+    assert {:ok, nil} = BotTrader.Store.get_last_signal("ZZZ")
   end
 
   test "watchlist grows by one per run", %{dir: dir} do

@@ -29,8 +29,13 @@ defmodule BotTrader.Config do
   def mover_count, do: env_int("MOVER_COUNT", 5)
   def max_mover_position_pct, do: env_float("MAX_MOVER_POSITION_PCT", 0.10)
   def market_hours_enabled, do: env("MARKET_HOURS_ENABLED", "true") == "true"
+  def candle_cache_seconds, do: env_int("CANDLE_CACHE_SECONDS", 900)
+  def universe_screen_every_minutes, do: env_int("UNIVERSE_SCREEN_EVERY_MINUTES", 60)
   def universe_scan_every_n_runs, do: env_int("UNIVERSE_SCAN_EVERY_N_RUNS", 30)
   def hermes_memory_path, do: env("HERMES_MEMORY_PATH", "/data/hermes_memory.md")
+  def tradingview_enabled, do: env("TRADINGVIEW_ENABLED", "true") == "true"
+  def tradingview_batch_size, do: env_int("TRADINGVIEW_BATCH_SIZE", 25)
+  def tradingview_max_concurrency, do: env_int("TRADINGVIEW_MAX_CONCURRENCY", 2)
 
   def market_hours_start_utc, do: env_int("MARKET_HOURS_START_UTC", 8)
   def market_hours_end_utc, do: env_int("MARKET_HOURS_END_UTC", 22)

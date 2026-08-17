@@ -52,7 +52,7 @@ defmodule BotTrader.Universe do
       {:ok, entries} ->
         case Enum.find(entries, &(&1.symbol == symbol)) do
           nil -> :stock_us
-          entry -> String.to_atom(entry.asset_class)
+          entry -> asset_class_atom(entry.asset_class)
         end
 
       _ ->
@@ -60,12 +60,17 @@ defmodule BotTrader.Universe do
     end
   end
 
+  defp asset_class_atom("stock-br"), do: :stock_br
+  defp asset_class_atom("stock-us"), do: :stock_us
+  defp asset_class_atom("crypto"), do: :crypto
+  defp asset_class_atom(_), do: :stock_us
+
   def screen_movers(opts \\ []) do
     quotes_fun = opts[:quotes_fun] || (&MarketData.YahooFinance.quotes/1)
 
     with {:ok, entries} <- load_universe(opts[:path] || Config.universe_path()),
          symbols <- Enum.map(entries, & &1.symbol),
-         {:ok, quotes} <- quotes_fun.(symbols) do
+         {:ok, quotes} <- primary_quotes(symbols, quotes_fun) do
       held = Store.open_positions() |> Enum.map(& &1.symbol)
       watchlist = Store.get_watchlist() |> Enum.map(& &1.symbol)
 
@@ -76,6 +81,25 @@ defmodule BotTrader.Universe do
     else
       _ -> []
     end
+  end
+
+  defp primary_quotes(symbols, quotes_fun) do
+    snapshots = BotTrader.TradingViewStore.latest_snapshots()
+
+    if snapshots == [] do
+      quotes_fun.(symbols)
+    else
+      {:ok,
+       Enum.map(snapshots, fn snapshot ->
+         %{
+           symbol: snapshot.symbol,
+           day_change_pct: snapshot.change_pct || 0.0,
+           volume: snapshot.volume || 0.0
+         }
+       end)}
+    end
+  rescue
+    _ -> quotes_fun.(symbols)
   end
 
   def scan_and_add(opts \\ []) do

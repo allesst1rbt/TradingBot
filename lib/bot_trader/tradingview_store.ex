@@ -33,6 +33,12 @@ defmodule BotTrader.TradingViewStore do
     |> Repo.all()
   end
 
+  def latest_snapshots do
+    from(s in TradingViewSnapshot, where: s.stale == false, order_by: [desc: s.timestamp])
+    |> Repo.all()
+    |> Enum.uniq_by(& &1.symbol)
+  end
+
   def get_cursor(key) do
     case Repo.get(TradingViewCursor, key) do
       nil -> {:ok, 0}
