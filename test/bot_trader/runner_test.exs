@@ -326,7 +326,9 @@ defmodule BotTrader.RunnerTest do
     mover_fun = fn -> raise "should not run" end
 
     deps =
-      deps(dir, signal_json(action: "HOLD", confidence: 0.1)) |> Map.put(:mover_fun, mover_fun)
+      deps(dir, signal_json(action: "HOLD", confidence: 0.1))
+      |> Map.put(:mover_fun, mover_fun)
+      |> Map.put(:now, ~U[2026-08-16 03:00:00Z])
 
     now = ~U[2026-08-16 03:00:00Z]
     System.put_env("MARKET_HOURS_ENABLED", "true")

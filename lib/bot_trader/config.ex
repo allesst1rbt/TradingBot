@@ -32,13 +32,16 @@ defmodule BotTrader.Config do
   def universe_scan_every_n_runs, do: env_int("UNIVERSE_SCAN_EVERY_N_RUNS", 30)
   def hermes_memory_path, do: env("HERMES_MEMORY_PATH", "/data/hermes_memory.md")
 
+  def market_hours_start_utc, do: env_int("MARKET_HOURS_START_UTC", 8)
+  def market_hours_end_utc, do: env_int("MARKET_HOURS_END_UTC", 22)
+
   def market_open?(now \\ DateTime.utc_now()) do
     case Date.day_of_week(DateTime.to_date(now)) do
       d when d in [6, 7] ->
         false
 
       _ ->
-        now.hour >= 13 and now.hour <= 20
+        now.hour >= market_hours_start_utc() and now.hour < market_hours_end_utc()
     end
   end
 
