@@ -22,7 +22,8 @@ defmodule BotTrader.LLM do
   def chat(messages, opts \\ []) do
     model = opts[:model] || Config.deepseek_model()
     base_url = opts[:base_url] || Config.deepseek_base_url()
-    req_opts = Keyword.drop(opts, [:model, :base_url])
+    delays = opts[:retry_delays] || [1000, 3000]
+    req_opts = Keyword.drop(opts, [:model, :base_url, :retry_delays])
     url = base_url <> "/chat/completions"
 
     body = %{
@@ -33,10 +34,23 @@ defmodule BotTrader.LLM do
 
     headers = [authorization: "Bearer " <> Config.deepseek_api_key()]
 
-    case Req.post(url, Keyword.merge([json: body, headers: headers], req_opts)) do
-      {:ok, %Req.Response{status: 200, body: body}} -> {:ok, body}
-      {:ok, _} -> {:error, :http_error}
-      {:error, _} -> {:error, :http_error}
+    do_chat(url, body, headers, req_opts, delays)
+  end
+
+  defp do_chat(url, body, headers, req_opts, delays) do
+    case Req.post(url, Keyword.merge([json: body, headers: headers, retry: false], req_opts)) do
+      {:ok, %Req.Response{status: 200, body: body}} ->
+        {:ok, body}
+
+      _ ->
+        case delays do
+          [] ->
+            {:error, :http_error}
+
+          [delay | rest] ->
+            Process.sleep(delay)
+            do_chat(url, body, headers, req_opts, rest)
+        end
     end
   end
 

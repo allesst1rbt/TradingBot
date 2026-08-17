@@ -95,9 +95,47 @@ defmodule BotTrader.LLMTest do
 
     started = System.monotonic_time(:millisecond)
 
-    assert {:error, :http_error} = LLM.chat([%{role: "user", content: "hi"}], base_url: base)
+    assert {:error, :http_error} =
+             LLM.chat([%{role: "user", content: "hi"}],
+               base_url: base,
+               receive_timeout: 300,
+               retry_delays: []
+             )
 
     elapsed = System.monotonic_time(:millisecond) - started
     assert elapsed < 2000
+  end
+
+  test "retries transient failure then succeeds" do
+    req_opts = [plug: {Req.Test, LLM}]
+
+    Req.Test.expect(LLM, 1, fn conn ->
+      Plug.Conn.send_resp(conn, 500, "boom")
+    end)
+
+    Req.Test.expect(LLM, 1, fn conn ->
+      Req.Test.json(conn, %{
+        "choices" => [%{"message" => %{"content" => "{\"action\":\"HOLD\"}"}}]
+      })
+    end)
+
+    assert {:ok, body} =
+             LLM.chat([%{role: "user", content: "hi"}], req_opts ++ [retry_delays: [1]])
+
+    assert body |> get_in(["choices"]) |> List.first() |> get_in(["message", "content"]) =~ "HOLD"
+    Req.Test.verify_on_exit!(LLM)
+  end
+
+  test "returns error after all retries" do
+    req_opts = [plug: {Req.Test, LLM}]
+
+    Req.Test.expect(LLM, 3, fn conn ->
+      Plug.Conn.send_resp(conn, 500, "boom")
+    end)
+
+    assert {:error, :http_error} =
+             LLM.chat([%{role: "user", content: "hi"}], req_opts ++ [retry_delays: [1, 1]])
+
+    Req.Test.verify_on_exit!(LLM)
   end
 end
