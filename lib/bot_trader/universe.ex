@@ -60,6 +60,24 @@ defmodule BotTrader.Universe do
     end
   end
 
+  def screen_movers(opts \\ []) do
+    quotes_fun = opts[:quotes_fun] || (&MarketData.YahooFinance.quotes/1)
+
+    with {:ok, entries} <- load_universe(opts[:path] || Config.universe_path()),
+         symbols <- Enum.map(entries, & &1.symbol),
+         {:ok, quotes} <- quotes_fun.(symbols) do
+      held = Store.open_positions() |> Enum.map(& &1.symbol)
+      watchlist = Store.get_watchlist() |> Enum.map(& &1.symbol)
+
+      case top_movers(quotes, held ++ watchlist, Config.mover_count()) do
+        :none -> []
+        movers -> movers
+      end
+    else
+      _ -> []
+    end
+  end
+
   def scan_and_add(opts \\ []) do
     quotes_fun = opts[:quotes_fun] || (&MarketData.YahooFinance.quotes/1)
 

@@ -292,6 +292,49 @@ defmodule BotTrader.RunnerTest do
     port
   end
 
+  test "mover analysis runs when market open", %{dir: dir} do
+    System.put_env("MARKET_HOURS_ENABLED", "true")
+    on_exit(fn -> System.delete_env("MARKET_HOURS_ENABLED") end)
+
+    mover_fun = fn ->
+      [%{symbol: "ZZZ", asset_class: :stock_us}]
+    end
+
+    deps =
+      deps(dir, signal_json(action: "HOLD", confidence: 0.1))
+      |> Map.put(:mover_fun, mover_fun)
+      |> Map.put(:now, ~U[2026-08-14 15:00:00Z])
+
+    assert {:ok, summary} = Runner.run(deps, :standard)
+    assert_received {:model, "deepseek-v4-flash"}
+
+    {:ok, signal} = BotTrader.Store.get_last_signal("ZZZ")
+    assert signal.source == "mover"
+  end
+
+  test "watchlist signals tagged source", %{dir: dir} do
+    deps =
+      deps(dir, signal_json(action: "HOLD", confidence: 0.1)) |> Map.put(:mover_fun, fn -> [] end)
+
+    assert {:ok, _} = Runner.run(deps, :standard)
+
+    {:ok, signal} = BotTrader.Store.get_last_signal("BTC")
+    assert signal.source == "watchlist"
+  end
+
+  test "market closed skips movers", %{dir: dir} do
+    mover_fun = fn -> raise "should not run" end
+
+    deps =
+      deps(dir, signal_json(action: "HOLD", confidence: 0.1)) |> Map.put(:mover_fun, mover_fun)
+
+    now = ~U[2026-08-16 03:00:00Z]
+    System.put_env("MARKET_HOURS_ENABLED", "true")
+    on_exit(fn -> System.delete_env("MARKET_HOURS_ENABLED") end)
+
+    assert {:ok, _} = Runner.run(deps, :standard)
+  end
+
   test "watchlist grows by one per run", %{dir: dir} do
     BotTrader.Repo.delete_all(BotTrader.WatchlistEntry)
     BotTrader.Store.add_to_watchlist("AAA", "stock-us")

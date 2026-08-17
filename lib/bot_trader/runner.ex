@@ -20,7 +20,26 @@ defmodule BotTrader.Runner do
 
       telegram = deps[:telegram] || (&BotTrader.Telegram.send_message/1)
 
-      signals = analyze_all(watchlist, portfolio, deps, kind)
+      watchlist_signals = analyze_all(watchlist, portfolio, deps, kind, "watchlist")
+
+      mover_signals =
+        if Config.market_hours_enabled() and Config.market_open?(deps[:now] || DateTime.utc_now()) do
+          mover_fun = deps[:mover_fun] || (&BotTrader.Universe.screen_movers/0)
+
+          case mover_fun.() do
+            movers when is_list(movers) ->
+              Enum.map(movers, fn mover ->
+                analyze(mover, portfolio, deps, kind, "mover")
+              end)
+
+            _ ->
+              []
+          end
+        else
+          []
+        end
+
+      signals = watchlist_signals ++ mover_signals
 
       failed_symbols =
         Enum.flat_map(signals, fn s -> if s.llm_error, do: [s.symbol], else: [] end)
@@ -81,7 +100,8 @@ defmodule BotTrader.Runner do
             confidence: signal.signal.confidence,
             model: signal.model,
             price: signal.last_close,
-            rationale: signal.rationale
+            rationale: signal.rationale,
+            source: signal.source
           })
         end
       end)
@@ -102,7 +122,8 @@ defmodule BotTrader.Runner do
                   symbol: signal.symbol,
                   asset_class: signal.asset_class,
                   notional: signal.target_weight * portfolio.cash,
-                  price: signal.last_close
+                  price: signal.last_close,
+                  source: String.to_atom(signal.source)
                 }
               ]
 
@@ -113,7 +134,8 @@ defmodule BotTrader.Runner do
                   symbol: signal.symbol,
                   asset_class: signal.asset_class,
                   price: signal.last_close,
-                  reason: :signal
+                  reason: :signal,
+                  source: String.to_atom(signal.source)
                 }
               ]
 
@@ -310,13 +332,13 @@ defmodule BotTrader.Runner do
   defp asset_class_atom("stock-us"), do: :stock_us
   defp asset_class_atom("crypto"), do: :crypto
 
-  defp analyze_all(watchlist, portfolio, deps, kind) do
+  defp analyze_all(watchlist, portfolio, deps, kind, source) do
     Enum.map(watchlist, fn entry ->
-      analyze(entry, portfolio, deps, kind)
+      analyze(entry, portfolio, deps, kind, source)
     end)
   end
 
-  defp analyze(entry, portfolio, deps, kind) do
+  defp analyze(entry, portfolio, deps, kind, source) do
     router = deps[:router] || (&MarketData.router/1)
     {provider, symbol} = router.(entry)
     candles_fun = deps[:candles] || fn symbol, days -> provider.candles(symbol, days) end
@@ -370,6 +392,7 @@ defmodule BotTrader.Runner do
         qualitative: if(signal, do: signal.qualitative, else: ""),
         rationale: if(signal, do: signal.rationale, else: ""),
         model: model,
+        source: source,
         news_trigger: news_trigger?(closes),
         rsi: context.rsi,
         ema20: context.ema20,
@@ -389,6 +412,7 @@ defmodule BotTrader.Runner do
           qualitative: "",
           rationale: "",
           model: model,
+          source: source,
           news_trigger: false,
           rsi: nil,
           ema20: nil,

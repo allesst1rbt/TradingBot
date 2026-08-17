@@ -21,6 +21,7 @@ defmodule BotTrader.Signal do
     field(:model, :string)
     field(:price, :float)
     field(:rationale, :string)
+    field(:source, :string, default: "watchlist")
     belongs_to(:run, BotTrader.Run)
   end
 end
