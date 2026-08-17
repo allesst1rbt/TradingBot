@@ -248,6 +248,16 @@ defmodule BotTrader.StoreTest do
     assert refreshed.note == "memory write failed"
   end
 
+  test "degraded alert due window" do
+    assert BotTrader.Store.degraded_alert_due?(DateTime.utc_now()) == true
+    assert :ok = BotTrader.Store.put_degraded_alert_ts(DateTime.utc_now())
+    assert BotTrader.Store.degraded_alert_due?(DateTime.utc_now()) == false
+
+    past = DateTime.add(DateTime.utc_now(), -25 * 3600, :second)
+    assert :ok = BotTrader.Store.put_degraded_alert_ts(past)
+    assert BotTrader.Store.degraded_alert_due?(DateTime.utc_now()) == true
+  end
+
   test "last run age computed" do
     now = DateTime.utc_now()
     {:ok, run} = Store.start_run(:standard)

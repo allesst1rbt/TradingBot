@@ -26,11 +26,10 @@ defmodule BotTrader.Runner do
         Enum.flat_map(signals, fn s -> if s.llm_error, do: [s.symbol], else: [] end)
 
       if failed_symbols != [] do
-        telegram.(
-          BotTrader.Telegram.format_failure_alert(
-            "LLM degraded for: " <> Enum.join(failed_symbols, ", ")
-          )
-        )
+        if Store.degraded_alert_due?(DateTime.utc_now()) do
+          telegram.(BotTrader.Telegram.format_degraded_alert(failed_symbols))
+          Store.put_degraded_alert_ts(DateTime.utc_now())
+        end
       end
 
       news_fun = deps[:news] || default_news()

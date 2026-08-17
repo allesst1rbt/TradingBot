@@ -80,6 +80,10 @@ defmodule BotTrader.Telegram do
     "⚠️ bot_trader run FAILED: #{inspect(reason)}"
   end
 
+  def format_degraded_alert(symbols) do
+    "⚠️ Analysis degraded for: #{Enum.join(symbols, ", ")} — retrying next run"
+  end
+
   def format_trade_announcement(trade, summary) do
     reason =
       case trade[:reason] do

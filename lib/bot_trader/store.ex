@@ -129,6 +129,24 @@ defmodule BotTrader.Store do
     :ok
   end
 
+  def put_degraded_alert_ts(ts) do
+    %PollerState{key: "degraded_alert_ts", value: DateTime.to_unix(ts) |> Integer.to_string()}
+    |> Repo.insert!(on_conflict: :replace_all, conflict_target: [:key])
+
+    :ok
+  end
+
+  def degraded_alert_due?(now) do
+    case Repo.get(PollerState, "degraded_alert_ts") do
+      nil ->
+        true
+
+      state ->
+        last = state.value |> String.to_integer() |> DateTime.from_unix!()
+        DateTime.diff(now, last, :second) > 24 * 3600
+    end
+  end
+
   def get_budget_alert do
     case Repo.get(PollerState, "budget_alert") do
       nil -> {:ok, nil}

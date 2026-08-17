@@ -82,6 +82,12 @@ defmodule BotTrader.RunnerTest do
 
     BotTrader.Repo.delete_all(BotTrader.WatchlistEntry)
 
+    BotTrader.Repo.get_by(BotTrader.PollerState, key: "degraded_alert_ts")
+    |> case do
+      nil -> :ok
+      row -> BotTrader.Repo.delete!(row)
+    end
+
     BotTrader.Store.seed_watchlist(
       Enum.map(@watchlist, fn e ->
         %{symbol: e.symbol, asset_class: Atom.to_string(e.asset_class), coin_id: e[:coin_id]}
@@ -134,6 +140,27 @@ defmodule BotTrader.RunnerTest do
     messages = receive_messages()
     assert Enum.any?(messages, &(&1 =~ "degraded"))
     assert Enum.any?(messages, &(&1 =~ "BTC"))
+  end
+
+  test "degraded alert sent once per rolling 24h", %{dir: dir} do
+    llm = fn _messages, _model -> {:error, :mcp_unreachable} end
+    deps = deps(dir, signal_json()) |> Map.put(:llm, llm)
+
+    assert {:ok, _} = Runner.run(deps, :standard)
+    assert Enum.any?(receive_messages(), &(&1 =~ "degraded"))
+
+    assert {:ok, _} = Runner.run(deps, :standard)
+    refute Enum.any?(receive_messages(), &(&1 =~ "degraded"))
+  end
+
+  test "degraded alert wording calm", %{dir: dir} do
+    llm = fn _messages, _model -> {:error, :mcp_unreachable} end
+    deps = deps(dir, signal_json()) |> Map.put(:llm, llm)
+
+    assert {:ok, _} = Runner.run(deps, :standard)
+    messages = receive_messages()
+    assert Enum.any?(messages, &(&1 =~ "Analysis degraded"))
+    refute Enum.any?(messages, &(&1 =~ "run FAILED"))
   end
 
   test "standard run uses flash model", %{dir: dir} do
