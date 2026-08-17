@@ -51,6 +51,9 @@ mix run --no-halt  # production entrypoint (scheduler + telegram poller)
 | `UNIVERSE_QUOTE_CHUNK` | `50` | Symbols per batch quote request |
 | `UNIVERSE_VOLUME_FLOOR` | `1000000` | Volume threshold for the candidate score bonus |
 | `HERMES_MEMORY_PATH` | `/data/hermes_memory.md` | Trade memory file absorbed by Hermes |
+| `TRADINGVIEW_ENABLED` | `true` | Enable the internal TradingView scraper |
+| `TRADINGVIEW_BATCH_SIZE` | `25` | Symbols scraped per round-robin tick |
+| `TRADINGVIEW_MAX_CONCURRENCY` | `2` | Concurrent Playwright pages |
 | `CRYPTO_FEE` | `0.001` | Crypto fee rate (0.1%) |
 | `US_FEE_USD` | `1.0` | US stock flat fee (USD) |
 | `B3_FEE_BRL` | `5.0` | B3 stock flat fee (BRL) |

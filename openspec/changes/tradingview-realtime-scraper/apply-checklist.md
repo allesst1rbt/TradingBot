@@ -65,7 +65,7 @@
 
 ### 4. Provider + LLM integration
 
-- [ ] Complete
+- [x] Complete
 - **Acceptance behavior:** TradingView data is primary, Yahoo fallback is marked; 600 snapshots produce at most 10 LLM analyses; prompts contain structured fields and current position context.
 - **RED test:** `test/bot_trader/tradingview_provider_test.exs` — `"uses yahoo fallback"`; `test/bot_trader/tradingview_reasoning_test.exs` — `"shortlist capped at ten"`, `"prompt contains structured fields"`
 - **RED command:** `mix test test/bot_trader/tradingview_provider_test.exs test/bot_trader/tradingview_reasoning_test.exs`
@@ -97,8 +97,8 @@
 
 ## Completion Gate
 
-- [ ] Every item has passing validation evidence
-- [ ] OpenSpec task checkboxes synchronized
-- [ ] Regression suite passes
-- [ ] `mix compile --warnings-as-errors && mix format --check-formatted` completed
-- [ ] No unrelated files
+- [x] Every item has passing validation evidence
+- [x] OpenSpec task checkboxes synchronized
+- [x] Regression suite passes
+- [x] `mix compile --warnings-as-errors && mix format --check-formatted` completed
+- [x] No unrelated files

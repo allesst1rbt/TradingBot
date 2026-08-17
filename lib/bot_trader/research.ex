@@ -15,6 +15,12 @@ defmodule BotTrader.Research do
         position -> "#{position.quantity} @ #{position.entry_price}"
       end
 
+    tradingview =
+      case context[:tradingview_snapshot] do
+        nil -> ""
+        snapshot -> "\nTradingView snapshot: #{Jason.encode!(snapshot)}"
+      end
+
     """
     You are a swing trading analyst. Analyze the asset below using technical indicators
     and your qualitative knowledge of recent news and fundamentals.
@@ -28,7 +34,7 @@ defmodule BotTrader.Research do
     Daily return: #{format(context.daily_return)}
     Current position: #{position}
     Available cash (BRL): #{format(context.cash_brl)}
-    #{context[:rolling_summary]}
+    #{context[:rolling_summary]}#{tradingview}
 
     Respond with a single JSON object:
     {"action": "BUY" | "SELL" | "HOLD" | "CLOSE",

@@ -363,7 +363,12 @@ defmodule BotTrader.Runner do
         daily_return: BotTrader.Indicators.daily_return(Enum.take(closes, -2)),
         position: Enum.find(portfolio.positions, &(&1.symbol == entry.symbol)),
         cash_brl: portfolio.cash,
-        rolling_summary: rolling_summary(entry.symbol)
+        rolling_summary: rolling_summary(entry.symbol),
+        tradingview_snapshot:
+          if(source == "mover",
+            do: BotTrader.TradingViewStore.latest_snapshot(entry.symbol),
+            else: nil
+          )
       }
 
       prompt = Research.build_prompt(entry, context)

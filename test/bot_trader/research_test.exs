@@ -77,4 +77,22 @@ defmodule BotTrader.ResearchTest do
     assert byte_size(summary1) > 0
     assert_in_delta byte_size(summary1), byte_size(summary2), byte_size(summary1) * 0.2
   end
+
+  test "prompt includes structured tradingview snapshot" do
+    prompt =
+      Research.build_prompt(%{symbol: "VIVT3", asset_class: :stock_br}, %{
+        rsi: 55.0,
+        ema20: 41.0,
+        ema50: 40.0,
+        last_close: 42.5,
+        daily_return: 0.01,
+        position: nil,
+        cash_brl: 1000.0,
+        tradingview_snapshot: %{price: 42.5, technical_rating: "buy", rsi: 55.0, macd: 0.2}
+      })
+
+    assert prompt =~ "TradingView snapshot"
+    assert prompt =~ "technical_rating"
+    assert prompt =~ "42.5"
+  end
 end
