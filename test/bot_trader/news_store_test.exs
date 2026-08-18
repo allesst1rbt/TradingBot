@@ -9,7 +9,7 @@ defmodule BotTrader.NewsStoreTest do
   end
 
   setup do
-    Repo.delete_all(BotTrader.NewsRunner)
+    Repo.delete_all(BotTrader.NewsRunnerRow)
     :ok
   end
 

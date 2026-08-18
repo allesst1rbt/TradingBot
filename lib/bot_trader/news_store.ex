@@ -3,14 +3,14 @@ defmodule BotTrader.NewsStore do
 
   import Ecto.Query
 
-  alias BotTrader.{NewsRunner, Repo}
+  alias BotTrader.{NewsRunnerRow, Repo}
 
   def insert(attrs) do
     now = DateTime.truncate(DateTime.utc_now(), :second)
     hash = hash_for(attrs[:symbol], attrs[:headline])
 
     changeset =
-      %NewsRunner{}
+      %NewsRunnerRow{}
       |> Ecto.Changeset.change(
         symbol: attrs[:symbol],
         headline: attrs[:headline],
@@ -22,13 +22,23 @@ defmodule BotTrader.NewsStore do
       )
 
     case Repo.insert(changeset, on_conflict: :nothing, conflict_target: [:hash]) do
-      {:ok, row} -> {:ok, row}
-      {:error, _} -> {:error, :duplicate}
+      {:ok, row} ->
+        if is_nil(row.id) do
+          case Repo.get_by(NewsRunnerRow, hash: hash) do
+            nil -> {:ok, row}
+            existing -> {:ok, existing}
+          end
+        else
+          {:ok, row}
+        end
+
+      {:error, _} ->
+        {:error, :duplicate}
     end
   end
 
   def latest(symbol, limit) do
-    from(n in NewsRunner,
+    from(n in NewsRunnerRow,
       where: n.symbol == ^symbol,
       order_by: [desc: n.timestamp],
       limit: ^limit
@@ -38,7 +48,7 @@ defmodule BotTrader.NewsStore do
 
   def prune(symbol, keep) do
     ids =
-      from(n in NewsRunner,
+      from(n in NewsRunnerRow,
         where: n.symbol == ^symbol,
         order_by: [desc: n.timestamp],
         limit: 10_000,
@@ -48,7 +58,7 @@ defmodule BotTrader.NewsStore do
       |> Repo.all()
 
     if ids != [] do
-      from(n in NewsRunner, where: n.id in ^ids) |> Repo.delete_all()
+      from(n in NewsRunnerRow, where: n.id in ^ids) |> Repo.delete_all()
     end
 
     :ok

@@ -1,4 +1,4 @@
-defmodule BotTrader.NewsRunner do
+defmodule BotTrader.NewsRunnerRow do
   use Ecto.Schema
 
   schema "news_runner" do
