@@ -22,10 +22,10 @@
 
 ## 4. Potentials Report Wiring
 
-- [ ] 4.1 Scraper cursor wrap triggers one Telegram potentials report
-- [ ] 4.2 Test wrap triggers send; mid-cycle no send (RED→GREEN)
+- [x] 4.1 Scraper cursor wrap triggers one Telegram potentials report
+- [x] 4.2 Test wrap triggers send; mid-cycle no send (RED→GREEN)
 
 ## 5. Railway Rollout
 
-- [ ] 5.1 Add NewsRunner to supervision tree; README env/docs
-- [ ] 5.2 Deploy and validate in production
+- [x] 5.1 Add NewsRunner to supervision tree; README env/docs
+- [x] 5.2 Deploy and validate in production

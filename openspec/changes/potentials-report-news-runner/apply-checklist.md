@@ -4,7 +4,7 @@
 **Current branch:** `<observed-by-apply; not changed>`
 **OpenSpec change root:** `openspec/changes/potentials-report-news-runner/`
 **Implementation plan:** `openspec/changes/potentials-report-news-runner/tasks.md`
-**Status:** planned
+**Status:** complete
 
 ## Validation Baseline
 
@@ -97,8 +97,8 @@
 
 ## Completion Gate
 
-- [ ] Every item has passing validation evidence
-- [ ] OpenSpec task checkboxes synchronized
-- [ ] Regression suite passes
-- [ ] `mix compile --warnings-as-errors && mix format --check-formatted` completed
-- [ ] No unrelated files
+- [x] Every item has passing validation evidence
+- [x] OpenSpec task checkboxes synchronized
+- [x] Regression suite passes
+- [x] `mix compile --warnings-as-errors && mix format --check-formatted` completed
+- [x] No unrelated files
