@@ -24,6 +24,7 @@ defmodule BotTrader.Application do
       Ecto.Migrator.up(BotTrader.Repo, 2, BotTrader.Release.V3, log: false)
       Ecto.Migrator.up(BotTrader.Repo, 3, BotTrader.Release.V4, log: false)
       Ecto.Migrator.up(BotTrader.Repo, 4, BotTrader.Release.V5, log: false)
+      Ecto.Migrator.up(BotTrader.Repo, 5, BotTrader.Release.V6, log: false)
       BotTrader.Migration.run(state_dir)
     end
 
