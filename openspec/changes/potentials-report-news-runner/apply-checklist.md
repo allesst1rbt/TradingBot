@@ -17,7 +17,7 @@
 
 ### 1. Storage + potentials report
 
-- [ ] Complete
+- [x] Complete
 - **Acceptance behavior:** V6 `news_runner` table; `NewsStore` dedups by headline hash, reads latest, prunes to 50/symbol; `Potentials.Report.build/1` formats one compact line per valid screened symbol.
 - **RED test:** `test/bot_trader/news_store_test.exs` — `"dedup by hash"`, `"prune keeps latest fifty"`; `test/bot_trader/potentials_report_test.exs` — `"formats one line per valid symbol"`, `"excludes stale symbols"`
 - **RED command:** `mix test test/bot_trader/news_store_test.exs test/bot_trader/potentials_report_test.exs`
@@ -33,7 +33,7 @@
 
 ### 2. TradingView news extraction
 
-- [ ] Complete
+- [x] Complete
 - **Acceptance behavior:** Playwright page extraction includes headline/source/timestamp lists; missing news is empty-on-failure without aborting the batch.
 - **RED test:** `test/bot_trader/tradingview_news_test.exs` — `"extracts headlines from fixture"`, `"empty on missing news"`
 - **RED command:** `mix test test/bot_trader/tradingview_news_test.exs`
@@ -49,7 +49,7 @@
 
 ### 3. NewsRunner GenServer
 
-- [ ] Complete
+- [x] Complete
 - **Acceptance behavior:** 5-min tick loads open positions, fetches news, dedups, classifies sentiment in one LLM batch (neutral fallback), alerts only on negative headline or signal change, stores re-analysis signal with source `news`.
 - **RED test:** `test/bot_trader/news_runner_test.exs` — `"tick processes open positions"`, `"duplicate headline skipped"`, `"sentiment neutral fallback"`, `"negative headline alerts only"`, `"re-analysis signal source news"`
 - **RED command:** `mix test test/bot_trader/news_runner_test.exs`

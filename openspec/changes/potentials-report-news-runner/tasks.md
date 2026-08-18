@@ -2,23 +2,23 @@
 
 ## 1. Storage and Report
 
-- [ ] 1.1 V6 migration for news_runner rows (symbol, headline, source, timestamp, sentiment, hash, inserted_at)
-- [ ] 1.2 `NewsStore` schema/queries: insert, dedup by hash, latest, prune to 50/symbol
-- [ ] 1.3 `Potentials.Report.build/1` + Telegram send once per cycle
-- [ ] 1.4 Test dedup, prune, report formatting, cycle-wrap send (RED→GREEN)
+- [x] 1.1 V6 migration for news_runner rows (symbol, headline, source, timestamp, sentiment, hash, inserted_at)
+- [x] 1.2 `NewsStore` schema/queries: insert, dedup by hash, latest, prune to 50/symbol
+- [x] 1.3 `Potentials.Report.build/1` + Telegram send once per cycle
+- [x] 1.4 Test dedup, prune, report formatting, cycle-wrap send (RED→GREEN)
 
 ## 2. News Extraction
 
-- [ ] 2.1 Extend TradingView Playwright extraction with headline/source/timestamp lists
-- [ ] 2.2 Test fixture extraction and empty-on-failure (RED→GREEN)
+- [x] 2.1 Extend TradingView Playwright extraction with headline/source/timestamp lists
+- [x] 2.2 Test fixture extraction and empty-on-failure (RED→GREEN)
 
 ## 3. News Runner
 
-- [ ] 3.1 `NewsRunner` GenServer: 5-min tick, open positions, fetch, dedup, persist
-- [ ] 3.2 LLM batch sentiment (one call per cycle, neutral fallback)
-- [ ] 3.3 Risk alert on negative headline or signal change
-- [ ] 3.4 Position re-analysis with structured news context; signal source `news`
-- [ ] 3.5 Test tick, dedup, sentiment, alert gating, re-analysis (RED→GREEN)
+- [x] 3.1 `NewsRunner` GenServer: 5-min tick, open positions, fetch, dedup, persist
+- [x] 3.2 LLM batch sentiment (one call per cycle, neutral fallback)
+- [x] 3.3 Risk alert on negative headline or signal change
+- [x] 3.4 Position re-analysis with structured news context; signal source `news`
+- [x] 3.5 Test tick, dedup, sentiment, alert gating, re-analysis (RED→GREEN)
 
 ## 4. Potentials Report Wiring
 
