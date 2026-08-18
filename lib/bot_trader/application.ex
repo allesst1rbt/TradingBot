@@ -54,13 +54,38 @@ defmodule BotTrader.Application do
           end,
           persist_fun: fn results ->
             Enum.each(results, fn result ->
-              if Map.get(result, :timestamp) do
-                BotTrader.TradingViewStore.insert_snapshot(result)
+              news = Map.get(result, :news) || []
+
+              snapshot_attrs =
+                Map.drop(result, [:news, :error])
+                |> Map.put_new_lazy(:timestamp, fn ->
+                  DateTime.truncate(DateTime.utc_now(), :second)
+                end)
+
+              if snapshot_attrs[:timestamp] do
+                BotTrader.TradingViewStore.insert_snapshot(snapshot_attrs)
               end
+
+              Enum.each(news, fn item ->
+                BotTrader.NewsStore.insert(%{
+                  symbol: result[:symbol],
+                  headline: item[:headline] || item["headline"] || "",
+                  source: item[:source] || item["source"] || "",
+                  timestamp: snapshot_attrs[:timestamp],
+                  sentiment: "neutral"
+                })
+              end)
             end)
           end,
           cursor_fun: fn next_cursor ->
             BotTrader.TradingViewStore.put_cursor("stocks", next_cursor)
+          end,
+          on_wrap: fn ->
+            if BotTrader.Config.potentials_report_enabled() do
+              snapshots = BotTrader.TradingViewStore.latest_snapshots()
+              text = BotTrader.Potentials.Report.build(snapshots)
+              BotTrader.Telegram.send_message(text)
+            end
           end,
           auto_start: true,
           name: BotTrader.TradingView.Scheduler

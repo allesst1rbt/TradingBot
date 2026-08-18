@@ -14,6 +14,7 @@ defmodule BotTrader.TradingView.Scheduler do
       scrape_fun: opts[:scrape_fun] || (&BotTrader.TradingView.Browser.scrape_batch/1),
       persist_fun: opts[:persist_fun] || fn _ -> :ok end,
       cursor_fun: opts[:cursor_fun] || fn _ -> :ok end,
+      on_wrap: opts[:on_wrap] || fn -> :ok end,
       tick_ms: opts[:tick_ms] || 300_000
     }
 
@@ -27,6 +28,11 @@ defmodule BotTrader.TradingView.Scheduler do
     {batch, next_cursor} = next_batch(state.entries, state.cursor, state.batch_size)
     result = state.scrape_fun.(batch)
     state.persist_fun.(result)
+
+    if next_cursor == 0 do
+      state.on_wrap.()
+    end
+
     state.cursor_fun.(next_cursor)
     {:noreply, %{state | cursor: next_cursor}}
   end

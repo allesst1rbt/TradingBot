@@ -69,7 +69,7 @@ defmodule BotTrader.TradingView.Browser do
        %{
          symbol: entry.symbol,
          asset_class: entry.asset_class,
-         timestamp: DateTime.to_iso8601(DateTime.utc_now()),
+         timestamp: DateTime.truncate(DateTime.utc_now(), :second),
          timeframe: "15m",
          price: data["price"],
          change_pct: data["change_pct"],

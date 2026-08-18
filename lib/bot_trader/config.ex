@@ -36,6 +36,7 @@ defmodule BotTrader.Config do
   def tradingview_enabled, do: env("TRADINGVIEW_ENABLED", "true") == "true"
   def tradingview_batch_size, do: env_int("TRADINGVIEW_BATCH_SIZE", 25)
   def tradingview_max_concurrency, do: env_int("TRADINGVIEW_MAX_CONCURRENCY", 2)
+  def potentials_report_enabled, do: env("POTENTIALS_REPORT_ENABLED", "true") == "true"
 
   def market_hours_start_utc, do: env_int("MARKET_HOURS_START_UTC", 8)
   def market_hours_end_utc, do: env_int("MARKET_HOURS_END_UTC", 22)

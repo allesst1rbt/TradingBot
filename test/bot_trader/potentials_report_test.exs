@@ -27,4 +27,9 @@ defmodule BotTrader.PotentialsReportTest do
     assert text =~ "VIVT3"
     refute text =~ "STALE"
   end
+
+  test "no potentials message when empty" do
+    text = Report.build([])
+    assert text =~ "No potentials"
+  end
 end
