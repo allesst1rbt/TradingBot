@@ -21,6 +21,14 @@ defmodule BotTrader.TradingView.Normalizer do
       ema20: number(data[:ema20]),
       sma50: number(data[:sma50]),
       provider: "tradingview",
+      news:
+        Enum.map(data[:news] || data["news"] || [], fn item ->
+          %{
+            headline: item[:headline] || item["headline"],
+            source: item[:source] || item["source"],
+            timestamp: item[:timestamp] || item["timestamp"]
+          }
+        end),
       stale: false
     }
 

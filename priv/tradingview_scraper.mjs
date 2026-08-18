@@ -25,8 +25,13 @@ try {
     const change = numeric(text.match(/Change\s+(-?\d[\d,.]*)\s*%?/i)?.[1]);
     const volume = numeric(text.match(/Volume\s+([\d,.]+)/i)?.[1]);
     const title = document.title || meta("title");
+    const news =
+      Array.from(document.querySelectorAll("a[href*='/news/'], article a, [class*='news'] a"))
+        .map((a) => ({ headline: a.textContent?.trim() ?? "", source: a.href || "" }))
+        .filter((n) => n.headline.length > 10)
+        .slice(0, 10);
 
-    return { text, title, price, change_pct: change, volume };
+    return { text, title, price, change_pct: change, volume, news };
   });
 
   process.stdout.write(JSON.stringify({ ok: true, ...result }));

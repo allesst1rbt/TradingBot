@@ -73,7 +73,11 @@ defmodule BotTrader.TradingView.Browser do
          timeframe: "15m",
          price: data["price"],
          change_pct: data["change_pct"],
-         volume: data["volume"]
+         volume: data["volume"],
+         news:
+           Enum.map(data["news"] || [], fn item ->
+             %{headline: item["headline"], source: item["source"]}
+           end)
        }}
     else
       _ -> {:error, :playwright_invalid_output}
